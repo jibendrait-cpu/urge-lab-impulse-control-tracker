@@ -1,4 +1,5 @@
 const STORE_KEY = "urge-lab-complete-v1";
+const APP_VERSION = "2026-04-23-yearly-nepali-date";
 
 const defaults = {
   categories: [
@@ -68,6 +69,10 @@ function saveState() {
 }
 
 function init() {
+  if (localStorage.getItem("urge-lab-app-version") !== APP_VERSION && "serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations?.().then(registrations => registrations.forEach(registration => registration.update()));
+    localStorage.setItem("urge-lab-app-version", APP_VERSION);
+  }
   syncSettingsUi();
   bindEvents();
   scheduleReminders();
@@ -164,7 +169,7 @@ function tickBattle() {
   if (!activeBattle) return;
   const start = new Date(activeBattle.startTime);
   $("activeCategory").textContent = activeBattle.category;
-  $("activeStarted").textContent = `Started ${start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" })}`;
+  $("activeStarted").textContent = `Started ${formatDualDateTime(start, true)}`;
   $("activeTimer").textContent = formatDurationMs(Date.now() - start.getTime());
   $("activeReason").textContent = todaysPledge();
   $("activeRescuePlan").textContent = planFor(activeBattle.category);
@@ -388,13 +393,13 @@ function renderTrend(sessions) {
   $("trendBars").innerHTML = labels.map(label => {
     const won = groups[label].filter(s => s.outcome === "won").length;
     const lost = groups[label].length - won;
-    return trendRow(label, won, lost, maxCount, `${pct(won, won + lost)}`);
+    return trendRow(formatGroupLabel(label, analyticsRange), won, lost, maxCount, `${pct(won, won + lost)}`);
   }).join("");
   const maxTime = Math.max(1, ...labels.map(k => sum(groups[k], "durationSeconds")));
   $("timeTrendBars").innerHTML = labels.map(label => {
     const wonTime = sum(groups[label].filter(s => s.outcome === "won"), "durationSeconds");
     const lostTime = sum(groups[label].filter(s => s.outcome === "defeated"), "durationSeconds");
-    return trendRow(label, wonTime, lostTime, maxTime, formatDuration(wonTime + lostTime));
+    return trendRow(formatGroupLabel(label, analyticsRange), wonTime, lostTime, maxTime, formatDuration(wonTime + lostTime));
   }).join("");
 }
 
@@ -494,7 +499,7 @@ function renderReflections() {
     $("reflectTomorrow").value = today.tomorrow || "";
   }
   $("reflectionList").innerHTML = state.reflections.length ? state.reflections.slice(0, 10).map(r => `
-    <article class="entry"><strong>${esc(r.date)}</strong><p class="subtle">Trigger: ${esc(r.trigger || "-")}</p><p class="subtle">Helped: ${esc(r.helped || "-")}</p><p class="subtle">Tomorrow: ${esc(r.tomorrow || "-")}</p></article>
+    <article class="entry"><strong>${esc(formatDualDateOnly(r.date))}</strong><p class="subtle">Trigger: ${esc(r.trigger || "-")}</p><p class="subtle">Helped: ${esc(r.helped || "-")}</p><p class="subtle">Tomorrow: ${esc(r.tomorrow || "-")}</p></article>
   `).join("") : `<div class="empty">No reflections saved yet.</div>`;
 }
 
@@ -723,7 +728,7 @@ function renderSessionList(items, deletable) {
         <span class="badge ${s.outcome}">${s.outcome === "won" ? "Won" : "Defeated"}</span>
       </div>
       <div class="entry-meta">
-        <span>${new Date(s.startTime).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span>
+        <span>${esc(formatDualDateTime(s.startTime, true))}</span>
         <span>${formatDuration(s.durationSeconds || 0)}</span>
         ${s.place ? `<span>${esc(s.place)}</span>` : ""}
         ${s.emotion ? `<span>${esc(s.emotion)}</span>` : ""}
@@ -951,6 +956,125 @@ function formatDurationMs(ms) {
   const s = seconds % 60;
   if (h) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function formatDualDateTime(value, includeSeconds = false) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value || "");
+  const adDate = new Intl.DateTimeFormat("en", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    ...(includeSeconds ? { second: "2-digit" } : {})
+  }).format(date);
+  return `${adDate} AD / ${formatNepaliDate(date, true)} BS`;
+}
+
+function formatDualDateOnly(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value || "");
+  const adDate = new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric" }).format(date);
+  return `${adDate} AD / ${formatNepaliDate(date, false)} BS`;
+}
+
+function formatNepaliDate(date, includeTime) {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-u-ca-nepali", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      ...(includeTime ? { hour: "numeric", minute: "2-digit" } : {})
+    });
+    if (formatter.resolvedOptions().calendar === "nepali") return formatter.format(date);
+  } catch {
+    return formatApproxBsDate(date, includeTime);
+  }
+  return formatApproxBsDate(date, includeTime);
+}
+
+function formatGroupLabel(label, range) {
+  if (range === "daily") return formatDualDateOnly(label);
+  if (range === "monthly") {
+    const [year, month] = label.split("-").map(Number);
+    return `${label} AD / ${formatNepaliDate(new Date(year, month - 1, 1), false)} BS`;
+  }
+  if (range === "yearly") {
+    const year = Number(label);
+    const start = new Date(year, 0, 1);
+    const end = new Date(year, 11, 31);
+    return `${year} AD / ${formatNepaliYear(start)}-${formatNepaliYear(end)} BS`;
+  }
+  if (range === "weekly") return `${label} AD / ${formatNepaliDate(isoWeekStart(label), false)} BS`;
+  return label;
+}
+
+function formatNepaliYear(date) {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-u-ca-nepali", { year: "numeric" });
+    if (formatter.resolvedOptions().calendar === "nepali") {
+      const parts = formatter.formatToParts(date);
+      return parts.find(part => part.type === "year")?.value || formatter.format(date);
+    }
+  } catch {
+    return adToApproxBs(date).year;
+  }
+  return adToApproxBs(date).year;
+}
+
+function isoWeekStart(label) {
+  const [yearText, weekText] = label.split("-W");
+  const year = Number(yearText);
+  const week = Number(weekText);
+  const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+  const day = simple.getUTCDay() || 7;
+  if (day <= 4) simple.setUTCDate(simple.getUTCDate() - day + 1);
+  else simple.setUTCDate(simple.getUTCDate() + 8 - day);
+  return simple;
+}
+
+function formatApproxBsDate(date, includeTime) {
+  const bs = adToApproxBs(date);
+  const time = includeTime ? `, ${new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(date)}` : "";
+  return `${bs.monthName} ${bs.day}, ${bs.year}${time}`;
+}
+
+function adToApproxBs(value) {
+  const date = new Date(value);
+  const monthStarts = [
+    { name: "Baisakh", month: 3, day: 14 },
+    { name: "Jestha", month: 4, day: 15 },
+    { name: "Asar", month: 5, day: 15 },
+    { name: "Shrawan", month: 6, day: 17 },
+    { name: "Bhadra", month: 7, day: 17 },
+    { name: "Ashwin", month: 8, day: 17 },
+    { name: "Kartik", month: 9, day: 18 },
+    { name: "Mangsir", month: 10, day: 17 },
+    { name: "Poush", month: 11, day: 16 },
+    { name: "Magh", month: 0, day: 15, nextAdYear: true },
+    { name: "Falgun", month: 1, day: 13, nextAdYear: true },
+    { name: "Chaitra", month: 2, day: 15, nextAdYear: true }
+  ];
+  const adYear = date.getFullYear();
+  const baisakhStartThisYear = new Date(adYear, 3, 14);
+  const bsYear = date >= baisakhStartThisYear ? adYear + 57 : adYear + 56;
+  const baisakhAdYear = bsYear - 57;
+  const starts = monthStarts.map(item => ({
+    name: item.name,
+    date: new Date(baisakhAdYear + (item.nextAdYear ? 1 : 0), item.month, item.day)
+  }));
+  let current = starts[0];
+  for (const start of starts) {
+    if (date >= start.date) current = start;
+  }
+  if (date < starts[0].date) current = starts[starts.length - 1];
+  const day = Math.max(1, Math.floor((dateNoon(date) - dateNoon(current.date)) / 86400000) + 1);
+  return { year: bsYear, monthName: current.name, day };
+}
+
+function dateNoon(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12).getTime();
 }
 
 function hoursBetween(a, b) {

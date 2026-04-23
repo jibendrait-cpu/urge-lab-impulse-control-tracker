@@ -108,6 +108,7 @@ function bindEvents() {
   $("exportJson").addEventListener("click", () => download("urge-lab-backup.json", JSON.stringify(state, null, 2), "application/json"));
   $("exportCsv").addEventListener("click", () => download("urge-lab-sessions.csv", sessionsToCsv(), "text/csv"));
   $("importJson").addEventListener("change", importJson);
+  $("loadSampleData").addEventListener("click", loadSampleData);
   $("cancelFriction").addEventListener("click", cancelFriction);
   $("continueFriction").addEventListener("click", continueFriction);
 
@@ -241,6 +242,59 @@ function saveManual(event) {
   });
   event.target.reset();
   saveState();
+}
+
+function loadSampleData() {
+  if (state.sessions.length && !confirm("Add sample data to your existing data? It will not delete your current entries.")) return;
+  const day = daysBack => {
+    const date = new Date();
+    date.setDate(date.getDate() - daysBack);
+    return date;
+  };
+  const at = (daysBack, hour, minute, durationMinutes) => {
+    const start = day(daysBack);
+    start.setHours(hour, minute, 0, 0);
+    const end = new Date(start.getTime() + durationMinutes * 60000);
+    return { startTime: start.toISOString(), endTime: end.toISOString(), durationSeconds: durationMinutes * 60 };
+  };
+  const samples = [
+    { ...at(0, 22, 18, 14), outcome: "won", category: "Social media", place: "Bed", emotion: "Bored", source: "YouTube", replacement: "Changed room", recoveryMinutes: 3, notes: "Left phone on desk and drank water." },
+    { ...at(0, 16, 40, 7), outcome: "won", category: "Junk food", place: "Kitchen", emotion: "Stressed", source: "Idle time", replacement: "Walk", recoveryMinutes: 2, notes: "Walked outside before eating." },
+    { ...at(1, 23, 5, 28), outcome: "defeated", category: "Social media", place: "Bed", emotion: "Tired", source: "TikTok", replacement: "No replacement used", recoveryMinutes: 45, notes: "Late-night phone in bed is risky." },
+    { ...at(1, 9, 20, 6), outcome: "won", category: "Procrastination", place: "Study desk", emotion: "Anxious", source: "Idle time", replacement: "Breathing", recoveryMinutes: 4, notes: "Two-minute start helped." },
+    { ...at(2, 21, 50, 18), outcome: "won", category: "Pornography", place: "Toilet", emotion: "Lonely", source: "Sexual urge", replacement: "Prayer", recoveryMinutes: 8, notes: "Used rescue plan and left the room." },
+    { ...at(3, 14, 10, 12), outcome: "defeated", category: "Impulsive shopping", place: "Office", emotion: "Stressed", source: "Phone notification", replacement: "No replacement used", recoveryMinutes: 30, notes: "Notification triggered browsing." },
+    { ...at(3, 18, 30, 9), outcome: "won", category: "Gaming", place: "Study desk", emotion: "Restless", source: "Memory", replacement: "Push-ups", recoveryMinutes: 5, notes: "Moved energy physically." },
+    { ...at(4, 22, 30, 16), outcome: "won", category: "Social media", place: "Bed", emotion: "Bored", source: "Scrolling", replacement: "Closed phone", recoveryMinutes: 2, notes: "Closed phone before opening app loop." },
+    { ...at(5, 12, 15, 5), outcome: "won", category: "Junk food", place: "Kitchen", emotion: "Tired", source: "Idle time", replacement: "Drink water", recoveryMinutes: 1, notes: "Water reduced intensity." },
+    { ...at(6, 23, 45, 35), outcome: "defeated", category: "Pornography", place: "Bed", emotion: "Lonely", source: "Sexual urge", replacement: "No replacement used", recoveryMinutes: 60, notes: "Need phone outside bedroom." },
+    { ...at(7, 10, 5, 8), outcome: "won", category: "Procrastination", place: "Study desk", emotion: "Anxious", source: "Idle time", replacement: "Journaling", recoveryMinutes: 6, notes: "Wrote the first next action." },
+    { ...at(8, 20, 25, 11), outcome: "won", category: "Gaming", place: "Office", emotion: "Restless", source: "YouTube", replacement: "Read", recoveryMinutes: 4, notes: "Read one chapter instead." }
+  ].map(sample => ({ id: id(), ...sample }));
+
+  state.sessions = [...samples, ...state.sessions].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+  const today = dateKey(new Date());
+  state.pledges[today] = { text: "I want my attention back", createdAt: nowISO() };
+  state.reflections.unshift({
+    id: id(),
+    date: today,
+    trigger: "Boredom and phone in bed",
+    helped: "Changing room, walking, and closing phone",
+    tomorrow: "Keep phone away from bed after 10 PM"
+  });
+  const focusStart = new Date();
+  focusStart.setHours(8, 30, 0, 0);
+  state.focusLogs.unshift({
+    id: id(),
+    startTime: focusStart.toISOString(),
+    minutes: 30,
+    endAt: focusStart.getTime() + 30 * 60000,
+    completed: true,
+    closedAt: new Date(focusStart.getTime() + 30 * 60000).toISOString()
+  });
+  saveState();
+  showView("dashboard");
+  toast("Sample data loaded. Check Dashboard, History, and Analytics.");
 }
 
 function render() {

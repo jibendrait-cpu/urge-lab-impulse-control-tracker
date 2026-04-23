@@ -814,6 +814,7 @@ function groupSessions(sessions, range) {
     let key = dateKey(d);
     if (range === "weekly") key = `${d.getFullYear()}-W${weekNumber(d)}`;
     if (range === "monthly") key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    if (range === "yearly") key = String(d.getFullYear());
     acc[key] ||= [];
     acc[key].push(s);
     return acc;

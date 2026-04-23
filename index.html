@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#12213b">
+  <meta name="description" content="Impulse-control tracker for urges, resistance, triggers, replacement actions, focus windows, and recovery.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Urge Lab">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>Urge Lab - Impulse Control Tracker</title>
+</head>
+<body>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div class="app-shell">
+    <header class="hero">
+      <div class="topbar">
+        <div class="brand">
+          <div class="brand-mark">UL</div>
+          <div>
+            <strong>Urge Lab</strong>
+            <span>Impulse-control tracker</span>
+          </div>
+        </div>
+        <button id="installBtn" class="install-btn">Install app</button>
+      </div>
+      <div class="hero-grid">
+        <div>
+          <p class="eyebrow">Momentary tracking, not habit checklists</p>
+          <h1>An impulse started. What happened next?</h1>
+          <p class="hero-copy">Start in one tap, end in one tap, then capture only the context that matters: place, emotion, source, replacement, and recovery.</p>
+        </div>
+        <button id="startImpulse" class="primary-cta">
+          <strong>Impulse Started</strong>
+          <span>Start timer instantly</span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Main navigation">
+      <button class="tab active" data-view="dashboard">Dashboard</button>
+      <button class="tab" data-view="battle">Log</button>
+      <button class="tab" data-view="history">History</button>
+      <button class="tab" data-view="analytics">Analytics</button>
+      <button class="tab" data-view="focus">Focus</button>
+      <button class="tab" data-view="reflection">Reflect</button>
+      <button class="tab" data-view="settings">Settings</button>
+    </nav>
+
+    <main>
+      <section id="dashboard" class="view active">
+        <section id="activeBattleCard" class="battle-card hidden">
+          <div>
+            <p class="eyebrow">Active battle</p>
+            <h2 id="activeCategory">Impulse in progress</h2>
+            <p id="activeStarted" class="subtle">Started now</p>
+          </div>
+          <div id="activeTimer" class="mega-timer">00:00</div>
+          <div class="reason-strip">
+            <span>Reason today</span>
+            <strong id="activeReason">Choose control for the next decision.</strong>
+          </div>
+          <div id="activeRescuePlan" class="rescue-plan">Rescue plan will appear here when a category is selected.</div>
+          <div class="quick-rescue">
+            <button class="soft-btn rescue-action" data-action="Breathing">Breathe 4-6</button>
+            <button class="soft-btn rescue-action" data-action="Drink water">Drink water</button>
+            <button class="soft-btn rescue-action" data-action="Walk">Walk</button>
+            <button class="soft-btn rescue-action" data-action="Changed room">Change room</button>
+          </div>
+          <div class="battle-actions">
+            <button id="wonBattle" class="win-btn">Won</button>
+            <button id="lostBattle" class="loss-btn">Defeated</button>
+          </div>
+          <button id="cancelBattle" class="link-btn">Cancel mistaken start</button>
+        </section>
+
+        <section class="pledge-card card">
+          <div>
+            <p class="eyebrow">Daily check-in</p>
+            <h2>Why do I want control today?</h2>
+            <p id="pledgeDisplay" class="subtle">Pick or write a reason. It will show during battles and focus windows.</p>
+          </div>
+          <div class="toolbar" id="reasonChips"></div>
+          <div class="inline-form">
+            <input id="customPledge" placeholder="Write today's reason">
+            <button id="savePledge" class="solid-btn">Save reason</button>
+          </div>
+        </section>
+
+        <section class="metric-grid">
+          <article class="metric"><small>Total urges</small><strong id="mTotal">0</strong></article>
+          <article class="metric"><small>Won urges</small><strong id="mWon">0</strong></article>
+          <article class="metric"><small>Defeated urges</small><strong id="mLost">0</strong></article>
+          <article class="metric"><small>Win rate</small><strong id="mRate">0%</strong></article>
+          <article class="metric accent"><small>Total won time</small><strong id="mWonTime">0m</strong></article>
+          <article class="metric warn"><small>Defeated time</small><strong id="mLostTime">0m</strong></article>
+          <article class="metric"><small>Longest resisted</small><strong id="mLongest">0m</strong></article>
+          <article class="metric"><small>Saved estimate</small><strong id="mSaved">0m</strong></article>
+          <article class="metric"><small>Current streak</small><strong id="mCurrentStreak">0d</strong></article>
+          <article class="metric"><small>Best streak</small><strong id="mBestStreak">0d</strong></article>
+          <article class="metric"><small>Recovery score</small><strong id="mRecoveryScore">0</strong></article>
+          <article class="metric score"><small>Today's battle score</small><strong id="mTodayScore">0</strong></article>
+        </section>
+
+        <section class="split">
+          <article class="card">
+            <h2>Won time vs defeated time</h2>
+            <p class="subtle">Won time is actual duration of won urges. Defeated time is actual duration of defeats. Saved estimate uses usual lost time per category minus actual resisted duration.</p>
+            <div class="compare">
+              <div><span>Won</span><div class="big-bar"><i id="wonBar"></i></div></div>
+              <div><span>Defeated</span><div class="big-bar lost"><i id="lostBar"></i></div></div>
+            </div>
+          </article>
+          <article class="card">
+            <h2>Today pattern</h2>
+            <p id="todayPattern" class="subtle">No urges logged today yet.</p>
+            <div id="todayBars" class="bar-list"></div>
+          </article>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Recent sessions</h2>
+              <p class="subtle">Newest urge episodes with start time, duration, trigger, replacement, and notes.</p>
+            </div>
+          </div>
+          <div id="recentSessions" class="entry-list"></div>
+        </section>
+      </section>
+
+      <section id="battle" class="view">
+        <section class="card">
+          <h2>Fast impulse log</h2>
+          <p class="subtle">Required: start and outcome only. Context is optional and fast.</p>
+          <div class="grid-2">
+            <label class="field">Category
+              <select id="preCategory"></select>
+            </label>
+            <label class="field">Optional custom category
+              <input id="preCustomCategory" placeholder="Custom category">
+            </label>
+          </div>
+          <button id="startImpulseLog" class="full-primary">Impulse Started</button>
+        </section>
+
+        <section class="card">
+          <h2>Manual quick entry</h2>
+          <p class="subtle">Use this if the episode already happened.</p>
+          <form id="manualForm" class="form-grid">
+            <div class="grid-3">
+              <label class="field">Outcome
+                <select id="manualOutcome"><option value="won">Won</option><option value="defeated">Defeated</option></select>
+              </label>
+              <label class="field">Category
+                <select id="manualCategory"></select>
+              </label>
+              <label class="field">Duration minutes
+                <input id="manualDuration" type="number" min="0" step="1" value="5">
+              </label>
+            </div>
+            <div class="grid-3">
+              <label class="field">Place
+                <input id="manualPlace" list="placeOptions" placeholder="bed, office...">
+              </label>
+              <label class="field">Emotion
+                <input id="manualEmotion" list="emotionOptions" placeholder="bored, stressed...">
+              </label>
+              <label class="field">Trigger source
+                <input id="manualSource" list="sourceOptions" placeholder="YouTube, memory...">
+              </label>
+            </div>
+            <label class="field">Replacement action
+              <input id="manualReplacement" list="replacementOptions" placeholder="walk, breathing, no replacement...">
+            </label>
+            <label class="field">Optional notes
+              <textarea id="manualNotes" placeholder="Short lesson or context."></textarea>
+            </label>
+            <button class="solid-btn" type="submit">Save manual entry</button>
+          </form>
+        </section>
+      </section>
+
+      <section id="history" class="view">
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>History</h2>
+              <p class="subtle">Filter by category, date range, and outcome.</p>
+            </div>
+            <button id="clearAll" class="danger-btn">Clear all</button>
+          </div>
+          <div class="grid-4 filters">
+            <label class="field">Category <select id="filterCategory"></select></label>
+            <label class="field">Outcome <select id="filterOutcome"><option value="all">All</option><option value="won">Won</option><option value="defeated">Defeated</option></select></label>
+            <label class="field">From <input id="filterFrom" type="date"></label>
+            <label class="field">To <input id="filterTo" type="date"></label>
+          </div>
+          <div id="historyList" class="entry-list"></div>
+        </section>
+      </section>
+
+      <section id="analytics" class="view">
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Analytics</h2>
+              <p class="subtle">Scientific pattern finding: risk hour, trigger leaderboard, replacement effectiveness, category trends, and recovery.</p>
+            </div>
+            <div class="segmented">
+              <button class="range-btn active" data-range="daily">Daily</button>
+              <button class="range-btn" data-range="weekly">Weekly</button>
+              <button class="range-btn" data-range="monthly">Monthly</button>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div>
+              <h3>Wins / defeats trend</h3>
+              <div id="trendBars" class="trend"></div>
+            </div>
+            <div>
+              <h3>Time won vs lost</h3>
+              <div id="timeTrendBars" class="trend"></div>
+            </div>
+          </div>
+        </section>
+        <section class="split">
+          <article class="card"><h2>High-risk hour</h2><div id="hourBars" class="bar-list"></div></article>
+          <article class="card"><h2>Category analysis</h2><div id="categoryBars" class="bar-list"></div></article>
+        </section>
+        <section class="grid-3">
+          <article class="card"><h2>Top places</h2><div id="placeBars" class="bar-list"></div></article>
+          <article class="card"><h2>Top emotions</h2><div id="emotionBars" class="bar-list"></div></article>
+          <article class="card"><h2>Top sources</h2><div id="sourceBars" class="bar-list"></div></article>
+        </section>
+        <section class="split">
+          <article class="card"><h2>Replacement effectiveness</h2><div id="replacementBars" class="bar-list"></div></article>
+          <article class="card"><h2>Pattern insights</h2><div id="insightText" class="insight-list"></div></article>
+        </section>
+      </section>
+
+      <section id="focus" class="view">
+        <section id="focusActiveCard" class="battle-card hidden">
+          <p class="eyebrow">Protected safe window</p>
+          <h2 id="focusTitle">Focus in progress</h2>
+          <div id="focusTimer" class="mega-timer">00:00</div>
+          <div class="reason-strip"><span>Reason</span><strong id="focusReason">Stay with the plan.</strong></div>
+          <button id="finishFocus" class="win-btn">Complete focus window</button>
+          <button id="cancelFocus" class="link-btn">Cancel focus window</button>
+        </section>
+
+        <section class="card">
+          <h2>Start protected window</h2>
+          <p class="subtle">A browser PWA cannot block other apps or the whole phone. This provides an in-app lock screen, countdown, target-site gate, and completion log.</p>
+          <div class="toolbar">
+            <button class="focus-start pill" data-min="15">15 min</button>
+            <button class="focus-start pill" data-min="30">30 min</button>
+            <button class="focus-start pill" data-min="60">60 min</button>
+          </div>
+          <div class="inline-form">
+            <input id="customFocus" type="number" min="1" placeholder="Custom minutes">
+            <button id="startCustomFocus" class="solid-btn">Start custom</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Friction mode shortcuts</h2>
+          <p class="subtle">Opening a distracting site from here requires a 5-second pause, a reason check, and a choice to continue or cancel.</p>
+          <div id="siteShortcuts" class="shortcut-grid"></div>
+          <div class="inline-form">
+            <input id="customSiteName" placeholder="Name">
+            <input id="customSiteUrl" placeholder="https://example.com">
+            <button id="addSite" class="solid-btn">Add gate</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Risk reminders</h2>
+          <p class="subtle">Browser notifications work only after permission and are most reliable while the app/browser is running. Native background alarms are limited in pure browser PWAs.</p>
+          <div class="grid-3">
+            <label class="field">Hour <input id="reminderHour" type="number" min="0" max="23" value="22"></label>
+            <label class="field">Label <input id="reminderLabel" placeholder="Late night risk"></label>
+            <label class="field">Weekday
+              <select id="reminderDay">
+                <option value="all">Every day</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option>
+              </select>
+            </label>
+          </div>
+          <div class="toolbar">
+            <button id="enableNotifications" class="pill">Enable notifications</button>
+            <button id="addReminder" class="solid-btn">Add reminder</button>
+          </div>
+          <div id="reminderList" class="entry-list compact"></div>
+        </section>
+      </section>
+
+      <section id="reflection" class="view">
+        <section class="card">
+          <h2>End-of-day reflection</h2>
+          <p class="subtle">Three prompts only. Optional, short, and useful for tomorrow.</p>
+          <form id="reflectionForm" class="form-grid">
+            <label class="field">What triggered me most today?
+              <input id="reflectTrigger" placeholder="Example: boredom in bed">
+            </label>
+            <label class="field">What helped most today?
+              <input id="reflectHelped" placeholder="Example: walking outside">
+            </label>
+            <label class="field">What will I do tomorrow?
+              <input id="reflectTomorrow" placeholder="Example: phone outside bedroom">
+            </label>
+            <button class="solid-btn" type="submit">Save reflection</button>
+          </form>
+        </section>
+        <section class="card">
+          <h2>Recent reflections</h2>
+          <div id="reflectionList" class="entry-list"></div>
+        </section>
+      </section>
+
+      <section id="settings" class="view">
+        <section class="card">
+          <h2>Categories and usual lost time</h2>
+          <p class="subtle">Saved time formula: for each won urge, max(usual lost time for category - actual battle duration, 0).</p>
+          <div id="categorySettings" class="settings-list"></div>
+          <div class="inline-form">
+            <input id="newCategoryName" placeholder="New category">
+            <input id="newCategoryMinutes" type="number" min="1" value="30" placeholder="Usual minutes">
+            <button id="addCategory" class="solid-btn">Add category</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>If-then rescue plans</h2>
+          <p class="subtle">Implementation intentions are setup-only: if this urge appears in this context, then I do the rescue action.</p>
+          <div id="planSettings" class="settings-list"></div>
+          <div class="grid-4">
+            <label class="field">Category <select id="planCategory"></select></label>
+            <label class="field">If context <input id="planIf" placeholder="scroll in bed"></label>
+            <label class="field">Then I will <input id="planThen" placeholder="stand up and drink water"></label>
+            <button id="addPlan" class="solid-btn align-end">Add plan</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Quick-select lists</h2>
+          <div class="grid-2">
+            <label class="field">Places <textarea id="placesSetting"></textarea></label>
+            <label class="field">Emotions <textarea id="emotionsSetting"></textarea></label>
+            <label class="field">Trigger sources <textarea id="sourcesSetting"></textarea></label>
+            <label class="field">Replacement actions <textarea id="replacementsSetting"></textarea></label>
+            <label class="field">Pledge reasons <textarea id="reasonsSetting"></textarea></label>
+          </div>
+          <button id="saveLists" class="solid-btn">Save lists</button>
+        </section>
+
+        <section class="card">
+          <h2>Data backup</h2>
+          <p class="subtle">Data is persisted with localStorage in this browser. Export JSON before clearing browser data or switching devices.</p>
+          <div class="toolbar">
+            <button id="exportJson" class="pill">Export JSON backup</button>
+            <button id="exportCsv" class="pill">Export CSV</button>
+            <label class="pill file-label" for="importJson">Import JSON backup</label>
+            <input id="importJson" type="file" accept="application/json" class="sr-only">
+          </div>
+          <p id="storageStatus" class="subtle"></p>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <datalist id="placeOptions"></datalist>
+  <datalist id="emotionOptions"></datalist>
+  <datalist id="sourceOptions"></datalist>
+  <datalist id="replacementOptions"></datalist>
+
+  <div id="endModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+    <div class="sheet">
+      <h2 id="endTitle">Close battle</h2>
+      <p id="endSubtitle" class="subtle">Outcome and duration are already recorded. Add quick context if useful.</p>
+      <form id="endForm" class="form-grid">
+        <input id="endOutcome" type="hidden">
+        <input id="endStart" type="hidden">
+        <input id="endEnd" type="hidden">
+        <label class="field">Category <select id="endCategory"></select></label>
+        <div class="chip-section"><strong>Place</strong><div id="placeChips" class="chip-row"></div><input id="customPlace" placeholder="Custom place"></div>
+        <div class="chip-section"><strong>Emotion</strong><div id="emotionChips" class="chip-row"></div><input id="customEmotion" placeholder="Custom emotion"></div>
+        <div class="chip-section"><strong>Trigger source</strong><div id="sourceChips" class="chip-row"></div><input id="customSource" placeholder="Custom source"></div>
+        <div class="chip-section"><strong>Replacement action</strong><div id="replacementChips" class="chip-row"></div><input id="customReplacement" placeholder="Custom replacement"></div>
+        <label class="field">Recovery minutes
+          <input id="endRecovery" type="number" min="0" step="1" value="0">
+        </label>
+        <label class="field">Optional notes
+          <textarea id="endNotes" placeholder="One short lesson or prevention idea."></textarea>
+        </label>
+        <div class="modal-actions">
+          <button id="saveMinimal" type="button" class="soft-btn">Save minimal</button>
+          <button type="submit" class="solid-btn">Save with context</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="frictionModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="frictionTitle">
+    <div class="sheet">
+      <p class="eyebrow">Friction mode</p>
+      <h2 id="frictionTitle">Pause before opening</h2>
+      <p class="subtle">Breathe, read your reason, and answer why now. This interrupts automatic behavior without blocking your choice.</p>
+      <div class="reason-strip"><span>Reason today</span><strong id="frictionReason">Stay in control today.</strong></div>
+      <div id="frictionCountdown" class="mega-timer small">5</div>
+      <label class="field">Why now?
+        <input id="whyNow" placeholder="Example: intentional research, not scrolling">
+      </label>
+      <div class="modal-actions">
+        <button id="cancelFriction" class="soft-btn">Cancel</button>
+        <button id="continueFriction" class="solid-btn" disabled>Continue to site</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

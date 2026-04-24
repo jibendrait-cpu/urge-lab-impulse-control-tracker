@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260424-dark-theme-1">
   <title>Urge Lab - Impulse Control Tracker</title>
 </head>
 <body>
@@ -28,6 +28,7 @@
             <span>Impulse-control tracker</span>
           </div>
         </div>
+        <div id="currentDatePill" class="date-pill">Loading date...</div>
         <button id="installBtn" class="install-btn">Install app</button>
       </div>
       <div class="hero-grid">
@@ -100,6 +101,8 @@
           <article class="metric"><small>Win rate</small><strong id="mRate">0%</strong></article>
           <article class="metric accent"><small>Total won time</small><strong id="mWonTime">0m</strong></article>
           <article class="metric warn"><small>Defeated time</small><strong id="mLostTime">0m</strong></article>
+          <article class="metric warn"><small>Avg defeated duration</small><strong id="mAvgLostDuration">0s</strong></article>
+          <article class="metric warn"><small>Quick-collapse count</small><strong id="mQuickCollapse">0</strong></article>
           <article class="metric"><small>Longest resisted</small><strong id="mLongest">0m</strong></article>
           <article class="metric"><small>Saved estimate</small><strong id="mSaved">0m</strong></article>
           <article class="metric"><small>Current streak</small><strong id="mCurrentStreak">0d</strong></article>
@@ -221,6 +224,7 @@
               <button class="range-btn" data-range="yearly">Yearly</button>
             </div>
           </div>
+          <div id="rangeSummary" class="range-summary"></div>
           <div class="grid-2">
             <div>
               <h3>Wins / defeats trend</h3>
@@ -327,6 +331,20 @@
 
       <section id="settings" class="view">
         <section class="card">
+          <h2>Appearance</h2>
+          <p class="subtle">Choose how the app looks.</p>
+          <div class="grid-2">
+            <label class="field">Theme
+              <select id="themeSetting">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+          </div>
+          <button id="saveTheme" class="solid-btn">Save theme</button>
+        </section>
+
+        <section class="card">
           <h2>Categories and usual lost time</h2>
           <p class="subtle">Saved time formula: for each won urge, max(usual lost time for category - actual battle duration, 0).</p>
           <div id="categorySettings" class="settings-list"></div>
@@ -426,6 +444,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260424-dark-theme-1"></script>
 </body>
 </html>

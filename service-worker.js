@@ -1,9 +1,9 @@
-const CACHE_NAME = "urge-lab-complete-v2-yearly-nepali";
+const CACHE_NAME = "urge-lab-complete-v5-dark-theme";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js",
+  "./styles.css?v=20260424-dark-theme-1",
+  "./app.js?v=20260424-dark-theme-1",
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",
@@ -27,13 +27,19 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
-  if (event.request.mode === "navigate") {
+  const url = new URL(event.request.url);
+  const networkFirst = event.request.mode === "navigate" ||
+    url.pathname.endsWith("/index.html") ||
+    url.pathname.endsWith("/app.js") ||
+    url.pathname.endsWith("/styles.css");
+
+  if (networkFirst) {
     event.respondWith(
       fetch(event.request).then(response => {
         const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put("./index.html", copy));
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
         return response;
-      }).catch(() => caches.match("./index.html"))
+      }).catch(() => caches.match(event.request).then(cached => cached || caches.match("./index.html")))
     );
     return;
   }

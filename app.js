@@ -1,5 +1,5 @@
 const STORE_KEY = "urge-lab-complete-v1";
-const APP_VERSION = "2026-04-23-yearly-nepali-date";
+const APP_VERSION = "2026-04-24-dark-theme-1";
 
 const defaults = {
   categories: [
@@ -26,7 +26,8 @@ const defaults = {
     { name: "Instagram", url: "https://www.instagram.com" },
     { name: "Shopping", url: "https://www.amazon.com" }
   ],
-  reminders: []
+  reminders: [],
+  theme: "light"
 };
 
 let state = loadState();
@@ -43,7 +44,14 @@ let reminderTimers = [];
 const $ = id => document.getElementById(id);
 const $$ = selector => Array.from(document.querySelectorAll(selector));
 const nowISO = () => new Date().toISOString();
-const dateKey = date => new Date(date).toISOString().slice(0, 10);
+const dateKey = value => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 const id = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
 
 function loadState() {
@@ -110,6 +118,7 @@ function bindEvents() {
   $("addCategory").addEventListener("click", addCategory);
   $("addPlan").addEventListener("click", addPlan);
   $("saveLists").addEventListener("click", saveLists);
+  $("saveTheme").addEventListener("click", saveTheme);
   $("exportJson").addEventListener("click", () => download("urge-lab-backup.json", JSON.stringify(state, null, 2), "application/json"));
   $("exportCsv").addEventListener("click", () => download("urge-lab-sessions.csv", sessionsToCsv(), "text/csv"));
   $("importJson").addEventListener("change", importJson);
@@ -303,6 +312,8 @@ function loadSampleData() {
 }
 
 function render() {
+  applyTheme();
+  renderCurrentDate();
   syncDynamicOptions();
   renderPledge();
   renderDashboard();
@@ -320,6 +331,8 @@ function renderDashboard() {
   const lost = s.filter(x => x.outcome === "defeated");
   const wonSeconds = sum(won, "durationSeconds");
   const lostSeconds = sum(lost, "durationSeconds");
+  const avgLostSeconds = lost.length ? lostSeconds / lost.length : 0;
+  const quickCollapseCount = lost.filter(x => (x.durationSeconds || 0) < 60).length;
   const saved = savedSeconds(won);
   const today = s.filter(x => dateKey(x.startTime) === dateKey(new Date()));
   const score = todayScore(today);
@@ -329,6 +342,8 @@ function renderDashboard() {
   $("mRate").textContent = pct(won.length, s.length);
   $("mWonTime").textContent = formatDuration(wonSeconds);
   $("mLostTime").textContent = formatDuration(lostSeconds);
+  $("mAvgLostDuration").textContent = formatDuration(avgLostSeconds);
+  $("mQuickCollapse").textContent = quickCollapseCount;
   $("mLongest").textContent = formatDuration(Math.max(0, ...won.map(x => x.durationSeconds || 0)));
   $("mSaved").textContent = formatDuration(saved);
   $("mCurrentStreak").textContent = `${currentNoDefeatStreak()}d`;
@@ -371,6 +386,7 @@ function renderHistory() {
 
 function renderAnalytics() {
   const sessions = state.sessions;
+  renderRangeSummary(sessions);
   renderTrend(sessions);
   renderBars("hourBars", hourCounts(sessions), sessions.length);
   renderCategoryAnalysis(sessions);
@@ -379,6 +395,31 @@ function renderAnalytics() {
   renderBars("sourceBars", countBy(sessions, "source", true), sessions.length);
   renderReplacementEffectiveness(sessions);
   renderInsights(sessions);
+}
+
+function renderCurrentDate() {
+  const pill = $("currentDatePill");
+  if (!pill) return;
+  pill.textContent = `Today: ${formatDualDateOnly(new Date())}`;
+}
+
+function renderRangeSummary(sessions) {
+  const groups = groupSessions(sessions, analyticsRange);
+  const labels = Object.keys(groups).sort();
+  if (!labels.length) {
+    $("rangeSummary").innerHTML = `<div class="empty">No ${analyticsRange} analytics yet. Log an urge or load sample data.</div>`;
+    return;
+  }
+  const latestLabel = labels[labels.length - 1];
+  const latest = groups[latestLabel] || [];
+  const won = latest.filter(s => s.outcome === "won");
+  const lost = latest.filter(s => s.outcome === "defeated");
+  $("rangeSummary").innerHTML = [
+    summaryTile(`${title(analyticsRange)} period`, formatGroupLabel(latestLabel, analyticsRange)),
+    summaryTile("Total urges", latest.length),
+    summaryTile("Win rate", pct(won.length, latest.length)),
+    summaryTile("Won / defeated time", `${formatDuration(sum(won, "durationSeconds"))} / ${formatDuration(sum(lost, "durationSeconds"))}`)
+  ].join("");
 }
 
 function renderTrend(sessions) {
@@ -531,11 +572,20 @@ function renderSettings() {
 }
 
 function syncSettingsUi() {
+  $("themeSetting").value = state.settings.theme || "light";
   $("placesSetting").value = state.settings.places.join(", ");
   $("emotionsSetting").value = state.settings.emotions.join(", ");
   $("sourcesSetting").value = state.settings.sources.join(", ");
   $("replacementsSetting").value = state.settings.replacements.join(", ");
   $("reasonsSetting").value = state.settings.reasons.join(", ");
+}
+
+function applyTheme() {
+  const theme = state.settings.theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) themeMeta.setAttribute("content", theme === "dark" ? "#0b1220" : "#12213b");
 }
 
 function syncDynamicOptions() {
@@ -623,6 +673,12 @@ function saveLists() {
   state.settings.replacements = parseList($("replacementsSetting").value, defaults.replacements);
   state.settings.reasons = parseList($("reasonsSetting").value, defaults.reasons);
   saveState();
+}
+
+function saveTheme() {
+  state.settings.theme = $("themeSetting").value === "dark" ? "dark" : "light";
+  saveState();
+  toast(`Theme set to ${state.settings.theme}.`);
 }
 
 function addSite() {
@@ -832,6 +888,10 @@ function trendRow(label, good, bad, max, value) {
   return `<div class="trend-row"><span>${esc(label)}</span><div class="bar"><i style="width:${Math.max(goodPct, badPct)}%; background:linear-gradient(90deg,var(--green) ${goodPct}%, var(--red) ${goodPct}%);"></i></div><strong>${value}</strong></div>`;
 }
 
+function summaryTile(label, value) {
+  return `<div class="summary-tile"><small>${esc(label)}</small><strong>${esc(value)}</strong></div>`;
+}
+
 function renderBars(id, counts, total) {
   const rows = Object.entries(counts).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 8);
   $(id).innerHTML = rows.length ? rows.map(([name, count]) => {
@@ -962,6 +1022,7 @@ function formatDualDateTime(value, includeSeconds = false) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value || "");
   const adDate = new Intl.DateTimeFormat("en", {
+    weekday: "long",
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -975,13 +1036,19 @@ function formatDualDateTime(value, includeSeconds = false) {
 function formatDualDateOnly(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value || "");
-  const adDate = new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "numeric" }).format(date);
+  const adDate = new Intl.DateTimeFormat("en", {
+    weekday: "long",
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  }).format(date);
   return `${adDate} AD / ${formatNepaliDate(date, false)} BS`;
 }
 
 function formatNepaliDate(date, includeTime) {
   try {
     const formatter = new Intl.DateTimeFormat("en-u-ca-nepali", {
+      weekday: "long",
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -1036,8 +1103,9 @@ function isoWeekStart(label) {
 
 function formatApproxBsDate(date, includeTime) {
   const bs = adToApproxBs(date);
+  const weekday = new Intl.DateTimeFormat("en", { weekday: "long" }).format(date);
   const time = includeTime ? `, ${new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(date)}` : "";
-  return `${bs.monthName} ${bs.day}, ${bs.year}${time}`;
+  return `${weekday}, ${bs.monthName} ${bs.day}, ${bs.year}${time}`;
 }
 
 function adToApproxBs(value) {

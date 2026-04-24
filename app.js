@@ -1,5 +1,5 @@
 const STORE_KEY = "urge-lab-complete-v1";
-const APP_VERSION = "2026-04-24-dark-theme-2";
+const APP_VERSION = "2026-04-24-dark-theme-3";
 
 const defaults = {
   categories: [
@@ -96,7 +96,7 @@ function registerServiceWorker() {
     window.location.reload();
   });
 
-  navigator.serviceWorker.register("service-worker.js").then(registration => {
+  navigator.serviceWorker.register(`service-worker.js?v=${APP_VERSION}`, { updateViaCache: "none" }).then(registration => {
     if (registration.waiting) {
       registration.waiting.postMessage({ type: "SKIP_WAITING" });
     }

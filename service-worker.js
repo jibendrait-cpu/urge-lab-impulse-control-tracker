@@ -1,9 +1,9 @@
-const CACHE_NAME = "urge-lab-complete-v6-dark-theme";
+const CACHE_NAME = "urge-lab-complete-v7-dark-theme";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260424-dark-theme-2",
-  "./app.js?v=20260424-dark-theme-2",
+  "./styles.css?v=20260424-dark-theme-3",
+  "./app.js?v=20260424-dark-theme-3",
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",

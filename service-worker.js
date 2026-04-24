@@ -1,15 +1,19 @@
-const CACHE_NAME = "urge-lab-complete-v5-dark-theme";
+const CACHE_NAME = "urge-lab-complete-v6-dark-theme";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260424-dark-theme-1",
-  "./app.js?v=20260424-dark-theme-1",
+  "./styles.css?v=20260424-dark-theme-2",
+  "./app.js?v=20260424-dark-theme-2",
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/maskable-512.png"
 ];
+
+self.addEventListener("message", event => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));

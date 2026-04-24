@@ -1,5 +1,5 @@
 const STORE_KEY = "urge-lab-complete-v1";
-const APP_VERSION = "2026-04-24-dark-theme-1";
+const APP_VERSION = "2026-04-24-dark-theme-2";
 
 const defaults = {
   categories: [
@@ -85,7 +85,32 @@ function init() {
   bindEvents();
   scheduleReminders();
   render();
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("service-worker.js"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", registerServiceWorker);
+}
+
+function registerServiceWorker() {
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
+  navigator.serviceWorker.register("service-worker.js").then(registration => {
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+    }
+
+    registration.addEventListener("updatefound", () => {
+      const installing = registration.installing;
+      if (!installing) return;
+      installing.addEventListener("statechange", () => {
+        if (installing.state === "installed" && navigator.serviceWorker.controller) {
+          registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+        }
+      });
+    });
+  }).catch(() => {});
 }
 
 function bindEvents() {

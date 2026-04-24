@@ -1,0 +1,339 @@
+# Project Handoff
+
+Generated from workspace `C:\Users\Dell\Documents\URGE TRACKER` on 2026-04-24.
+
+## A. Project Identity
+
+- App name: Urge Lab - Impulse Control Tracker.
+- Purpose: A beginner-friendly static PWA for tracking impulse/urge episodes, outcomes, resistance duration, triggers, replacement actions, focus windows, friction-gated distracting sites, reminders, reflections, and recovery patterns.
+- Current live Netlify URL: https://dreamy-concha-1b8a32.netlify.app
+- Netlify project: `dreamy-concha-1b8a32`, project ID `d91d652c-c80e-4fa0-8473-9d5dcafec745`.
+- GitHub remote: `https://github.com/jibendrait-cpu/urge-lab-impulse-control-tracker.git`
+- Branch: `main`.
+- Latest app commit before this handoff file: `850c4ea95f4667727fe7620b5abab2aa434910af` (`Refresh PWA asset versioning for Netlify`).
+- Package manager/build system: none. There is no `package.json`; the app is plain static HTML/CSS/JS.
+
+## B. Current Working Status
+
+Already working:
+- Static app loads from `index.html` with `styles.css` and `app.js`.
+- Main screens work as client-side sections: Dashboard, Log, History, Analytics, Focus, Reflect, Settings.
+- Data persists locally in `localStorage`.
+- PWA manifest, install prompt, icons, offline service worker, and Netlify static deployment are present.
+- Netlify production was manually deployed and verified live after the PWA cache fix.
+
+Recently fixed:
+- Browser/PWA cache update issue. `index.html` now references `styles.css?v=20260424-dark-theme-3` and `app.js?v=20260424-dark-theme-3`.
+- `app.js` `APP_VERSION` is `2026-04-24-dark-theme-3`.
+- Service worker cache was bumped to `urge-lab-complete-v7-dark-theme`.
+- Service worker registration now uses `navigator.serviceWorker.register(\`service-worker.js?v=${APP_VERSION}\`, { updateViaCache: "none" })`.
+- Old duplicate local app folder `urge tracker pwa` was synced with the current root app files, but that folder is ignored by Git.
+- `urge-lab-impulse-control-tracker.zip` was rebuilt locally, but it is ignored by Git.
+
+Still broken or uncertain:
+- No automated browser test suite exists.
+- No print/PDF report feature exists yet.
+- Reminder notifications rely on browser permission and active browser/PWA runtime; background reliability is not guaranteed.
+- PWA cannot block other apps or system-wide websites; it only provides an in-app focus window and friction gate.
+- Netlify deploy can be done manually with CLI, but the project may also auto-deploy from GitHub if configured in Netlify.
+- The current handoff file may create a newer commit than the app commit listed above; check `git log -1` after pulling.
+
+Must be tested manually:
+- Open production URL and confirm current UI loads.
+- Install/reopen PWA on phone/desktop and confirm the new service worker activates.
+- Start an impulse, win/defeat it, save minimal and save with context.
+- Add manual entry and verify dashboard/history/analytics update.
+- Switch light/dark theme and reload.
+- Export/import JSON and export CSV.
+- Test offline reload after one successful online load.
+- Test Netlify redeploy after future changes.
+
+## C. Full Feature List
+
+Screens/pages:
+- Dashboard: active battle card, daily check-in, metrics, won/defeated time comparison, today pattern, recent sessions.
+- Log: fast impulse log and manual quick entry.
+- History: category/outcome/date filtering and deletable session list.
+- Analytics: daily/weekly/monthly/yearly range summaries, trend bars, high-risk hour, category analysis, top places/emotions/sources, replacement effectiveness, pattern insights.
+- Focus: protected focus window, friction mode shortcuts, risk reminders.
+- Reflect: end-of-day reflection form and recent reflection list.
+- Settings: appearance/theme, category usual lost time, if-then rescue plans, quick-select lists, data backup.
+- Modals: end battle/debrief modal and friction mode pause modal.
+
+Buttons and actions:
+- Header: `Install app`.
+- Hero/Dashboard: `Impulse Started`, rescue action buttons `Breathe 4-6`, `Drink water`, `Walk`, `Change room`, `Won`, `Defeated`, `Cancel mistaken start`, reason chips, `Save reason`.
+- Tabs: `Dashboard`, `Log`, `History`, `Analytics`, `Focus`, `Reflect`, `Settings`.
+- Log: `Impulse Started`, `Save manual entry`.
+- History: `Clear all`, per-session `Delete`.
+- Analytics: `Daily`, `Weekly`, `Monthly`, `Yearly`.
+- Focus: `15 min`, `30 min`, `60 min`, `Start custom`, target-site shortcut buttons, `Add gate`, `Enable notifications`, `Add reminder`, per-reminder `Delete`, `Complete focus window`, `Cancel focus window`.
+- Reflect: `Save reflection`.
+- Settings: `Save theme`, per-category `Save`, `Add category`, `Add plan`, per-plan `Delete`, `Save lists`, `Load sample data`, `Export JSON backup`, `Export CSV`, `Import JSON backup`.
+- End battle modal: `Save minimal`, `Save with context`.
+- Friction modal: `Cancel`, `Continue to site`.
+
+Forms, inputs, dropdowns:
+- Daily check-in: `customPledge`.
+- Fast impulse log: `preCategory` select, `preCustomCategory` input.
+- Manual entry: `manualOutcome`, `manualCategory`, `manualDuration`, `manualPlace`, `manualEmotion`, `manualSource`, `manualReplacement`, `manualNotes`.
+- History filters: `filterCategory`, `filterOutcome`, `filterFrom`, `filterTo`.
+- Focus custom: `customFocus`.
+- Site gate: `customSiteName`, `customSiteUrl`.
+- Reminder: `reminderHour`, `reminderLabel`, `reminderDay`.
+- Reflection: `reflectTrigger`, `reflectHelped`, `reflectTomorrow`.
+- Theme: `themeSetting`.
+- Category settings: dynamic `data-cat-name` and `data-cat-min` inputs.
+- New category: `newCategoryName`, `newCategoryMinutes`.
+- Rescue plan: `planCategory`, `planIf`, `planThen`.
+- Quick-select lists: `placesSetting`, `emotionsSetting`, `sourcesSetting`, `replacementsSetting`, `reasonsSetting`.
+- Import: `importJson`.
+- End modal: `endOutcome`, `endStart`, `endEnd`, `endCategory`, chip groups for place/emotion/source/replacement, custom fields `customPlace`, `customEmotion`, `customSource`, `customReplacement`, `endRecovery`, `endNotes`.
+- Friction modal: `whyNow`.
+- Datalists: `placeOptions`, `emotionOptions`, `sourceOptions`, `replacementOptions`.
+
+Dashboard/report/chart elements:
+- Metrics: total urges, won urges, defeated urges, win rate, total won time, defeated time, average defeated duration, quick-collapse count, longest resisted, saved estimate, current streak, best streak, recovery score, today's battle score.
+- Bars/charts are DOM/CSS bars, not canvas/SVG charts.
+- Reports are screen-based only right now; there is no dedicated print/PDF report button or print stylesheet.
+
+localStorage keys and data structures:
+- `urge-lab-complete-v1`: main JSON state.
+- `urge-lab-app-version`: stores last app version seen by the browser for service-worker update checks.
+- Main state shape:
+  - `sessions`: array of urge sessions.
+  - `pledges`: object keyed by AD date `YYYY-MM-DD`, value `{ text, createdAt }`.
+  - `reflections`: array of `{ id, date, trigger, helped, tomorrow }`.
+  - `focusLogs`: array of focus windows `{ id, startTime, minutes, endAt, completed, closedAt }`.
+  - `frictionLogs`: array of gate events containing site, action `cancelled` or `continued`, why text, timestamps.
+  - `settings`: object merged with `defaults`.
+- Session shape:
+  - `{ id, startTime, endTime, outcome, category, durationSeconds, place, emotion, source, replacement, recoveryMinutes, notes }`.
+- Settings shape:
+  - `categories`: array of `{ name, usualMinutes }`.
+  - `places`, `emotions`, `sources`, `replacements`, `reasons`: string arrays.
+  - `rescuePlans`: array of `{ category, ifText, thenText }`.
+  - `targetSites`: array of `{ name, url }`.
+  - `reminders`: array of `{ id, hour, day, label }`.
+  - `theme`: `"light"` or `"dark"`.
+
+PWA/install/offline:
+- `manifest.json` uses standalone display, portrait orientation, scope `./`, start URL `./index.html`, and icons in `icons/`.
+- `beforeinstallprompt` is captured in `app.js` and shown through `installBtn`.
+- `service-worker.js` caches app shell assets and icons.
+- Navigations, `index.html`, `app.js`, and `styles.css` are network-first with offline fallback.
+- Other GET requests are cache-first with network fallback.
+- `SKIP_WAITING` message, `self.skipWaiting()`, and `clients.claim()` are used to activate updates promptly.
+
+Theme/dark mode:
+- Default theme is light in `defaults.theme`.
+- User setting is saved as `state.settings.theme`.
+- `applyTheme()` sets `document.documentElement.dataset.theme`, `colorScheme`, and the `theme-color` meta tag.
+- CSS has `:root` and `:root[data-theme="dark"]` variables.
+
+Print/PDF/report:
+- No print/PDF feature exists yet.
+- User preference is to make reports printable/PDF-friendly in future work.
+
+## D. File Map
+
+`index.html`
+- Purpose: Static app shell, metadata, PWA links, all screen markup, modals, datalists, script/style references.
+- Main sections: header hero, tabs, `dashboard`, `battle`, `history`, `analytics`, `focus`, `reflection`, `settings`, `endModal`, `frictionModal`.
+- Important IDs: all buttons/forms listed in section C.
+- Recent edits: asset query strings updated to `dark-theme-3`.
+
+`styles.css`
+- Purpose: Responsive app styling, CSS variables, light/dark themes, cards, metrics, bars, modals, sticky/fixed mobile tabs.
+- Important variables: `--ink`, `--muted`, `--paper`, `--panel`, `--line`, `--navy`, `--blue`, `--teal`, `--green`, `--amber`, `--red`, `--shadow`, `--radius`.
+- Main layout classes: `.app-shell`, `.hero`, `.tabs`, `.view`, `.card`, `.battle-card`, `.metric-grid`, `.split`, `.grid-2`, `.grid-3`, `.grid-4`, `.modal`, `.sheet`.
+- Recent edits: no tracked edit in latest cache-fix commit, but it is referenced by the new query string.
+
+`app.js`
+- Purpose: Full client app logic, data model, calculations, rendering, event binding, backup/import/export, reminders, focus/friction, PWA install registration.
+- Important constants/variables: `STORE_KEY`, `APP_VERSION`, `defaults`, `state`, `activeBattle`, `battleTimer`, `activeFocus`, `focusTimer`, `friction`, `frictionTimer`, `deferredPrompt`, `analyticsRange`, `reminderTimers`.
+- Main functions:
+  - Lifecycle/PWA: `init`, `registerServiceWorker`, `bindEvents`.
+  - State: `loadState`, `saveState`.
+  - Navigation: `showView`.
+  - Battles: `startBattle`, `tickBattle`, `endBattle`, `cancelBattle`, `saveEndedBattle`, `saveManual`, `deleteSession`, `clearAll`.
+  - Rendering: `render`, `renderDashboard`, `renderTodayPattern`, `renderHistory`, `renderAnalytics`, `renderCurrentDate`, `renderRangeSummary`, `renderTrend`, `renderCategoryAnalysis`, `renderReplacementEffectiveness`, `renderInsights`, `renderFocus`, `renderReflections`, `renderSettings`, `renderPledge`, `renderSessionList`, `renderBars`, `renderChips`.
+  - Focus/friction/reminders: `startFocus`, `tickFocus`, `closeFocus`, `addSite`, `openFriction`, `cancelFriction`, `continueFriction`, `enableNotifications`, `addReminder`, `deleteReminderById`, `scheduleReminders`, `fireReminder`, `nextReminderDelay`.
+  - Settings: `syncSettingsUi`, `applyTheme`, `syncDynamicOptions`, `savePledge`, `saveCustomPledge`, `todaysPledge`, `saveCategoryEdit`, `addCategory`, `addPlan`, `deletePlanByIndex`, `saveLists`, `saveTheme`.
+  - Calculations/helpers: `savedSeconds`, `todayScore`, `recoveryScore`, `currentNoDefeatStreak`, `bestNoDefeatStreak`, `groupSessions`, `trendRow`, `summaryTile`, `countBy`, `hourCounts`, `bestReplacement`, `topEntry`, `parseList`, `nonNegative`, `sum`, `average`, `pct`, date/BS helpers, `normalizeUrl`, `download`, `sessionsToCsv`, `importJson`, `toast`.
+- Recent edits: `APP_VERSION` bumped to `2026-04-24-dark-theme-3`; service worker registration now uses versioned URL and `{ updateViaCache: "none" }`.
+
+`service-worker.js`
+- Purpose: Offline cache and update behavior.
+- Important constants: `CACHE_NAME = "urge-lab-complete-v7-dark-theme"`, `ASSETS`.
+- Main handlers: `message`, `install`, `activate`, `fetch`.
+- Recent edits: cache version bumped to v7 and asset query strings updated to `dark-theme-3`.
+
+`manifest.json`
+- Purpose: PWA install metadata.
+- Important values: `name`, `short_name`, `start_url`, `scope`, `display`, `orientation`, `background_color`, `theme_color`, icon definitions.
+- Recent edits: none in latest commit.
+
+`netlify.toml`
+- Purpose: Netlify static deployment config.
+- Important settings: `[build] publish = "."`; no-cache headers for `/index.html` and `/service-worker.js`; security headers; SPA-style redirect `/*` to `/index.html`.
+- Recent edits: no-cache headers were added before the latest cache-fix commit.
+
+`README.txt`
+- Purpose: Human-readable feature blueprint, limitations, run/deploy notes, file list, privacy note.
+- Recent edits: none in latest commit.
+
+`.gitignore`
+- Purpose: Keeps local deploy artifacts out of Git.
+- Ignored: `.netlify/`, `*.zip`, `urge tracker pwa/`.
+
+`icons/`
+- Purpose: PWA icons and SVG favicon.
+- Files: `icon.svg`, `icon-192.png`, `icon-512.png`, `maskable-512.png`.
+
+`urge tracker pwa/`
+- Purpose: Duplicate local app folder, ignored by Git.
+- Status: synced with root files after the cache-fix work, but future source-of-truth edits should be made in root tracked files.
+
+`.netlify/`
+- Purpose: Netlify local state and temporary deploy folders, ignored by Git.
+- Important local state: `.netlify/state.json` contains site ID `d91d652c-c80e-4fa0-8473-9d5dcafec745`.
+
+`urge-lab-impulse-control-tracker.zip`
+- Purpose: Rebuilt manual upload artifact, ignored by Git.
+- Status: local convenience artifact only.
+
+## E. Data and Logic
+
+Storage:
+- All user data is local-only in browser `localStorage`.
+- `loadState()` parses `STORE_KEY` and merges saved settings over `defaults`.
+- `saveState()` writes state, rerenders all screens, and reschedules reminders.
+- Import/export use JSON. CSV export only includes session fields.
+
+Date logic:
+- `dateKey()` creates local AD date keys in `YYYY-MM-DD`.
+- Display dates show AD and BS. BS uses `Intl.DateTimeFormat("en-u-ca-nepali")` when supported and `adToApproxBs()` fallback otherwise.
+- History filters use browser AD date inputs.
+
+Analytics/report calculations:
+- Range grouping is done by `groupSessions(sessions, analyticsRange)`.
+- Daily key is `YYYY-MM-DD`.
+- Weekly key is `YYYY-W<weekNumber>`.
+- Monthly key is `YYYY-MM`.
+- Yearly key is `YYYY`.
+- Range summary uses latest group only.
+- Trends show last 8 groups.
+- High-risk hour counts `new Date(startTime).getHours()`.
+- Category analysis shows win rate per configured category with sessions.
+- Replacement effectiveness ranks replacement actions by wins / total uses.
+- Top place/emotion/source use simple frequency counts.
+- Insights require at least 3 sessions and summarize risky hour, highest-signal emotion/place/source, best replacement success signal, and pledge/recovery signal.
+
+Scores/formulas:
+- Win rate: `won / total`.
+- Saved estimate: for each won session, `max(category usual lost minutes * 60 - durationSeconds, 0)`.
+- Today's battle score: `max(0, round(wins * 10 - defeats * 8 + wonMinutes / 5 + focusBonus + recoveryBonus))`.
+- Focus bonus: `5` points per completed focus log today.
+- Recovery bonus: `8` if there is a defeat today and a later won session after that defeat.
+- Recovery score: per defeat, add `35` if next session after defeat is won, `25` if next session is within 24 hours, `40` if `recoveryMinutes <= 30`; average across defeats. If there are sessions but no defeats, score is `100`; no sessions gives `0`.
+- Current no-defeat streak: counts backward from today while no defeated session exists on each day, stopping before the earliest session date.
+- Best no-defeat streak: longest run among logged session days without defeated sessions.
+- Quick-collapse count: defeated sessions with `durationSeconds < 60`.
+
+Service worker/cache/version update:
+- `APP_VERSION` in `app.js` is stored in `localStorage` key `urge-lab-app-version`.
+- On version change, existing service worker registrations are asked to update.
+- Registration URL is versioned: `service-worker.js?v=${APP_VERSION}`.
+- `updateViaCache: "none"` tells the browser not to satisfy service worker update checks from HTTP cache.
+- `service-worker.js` uses `CACHE_NAME`; bump it whenever cached assets change.
+- `index.html` and `service-worker.js` receive no-cache headers in `netlify.toml`.
+
+## F. Deployment Status
+
+- Production URL: https://dreamy-concha-1b8a32.netlify.app
+- Unique deploy URL from last manual production deploy: `https://69eaebc8c2d6326a0d57db83--dreamy-concha-1b8a32.netlify.app`
+- Netlify build/deploy method: static deploy from project root, `publish = "."`.
+- Manual deploy used: clean `git archive` extracted into `.netlify/deploy-850c4ea`, then `npx --yes netlify-cli deploy --prod --dir .netlify\deploy-850c4ea`.
+- GitHub push status before handoff file: `main` synced with `origin/main` at `850c4ea`.
+- Cache/service-worker issue: fixed by query-string bumps, cache name bump, no-cache headers, `skipWaiting`, `clients.claim`, and `updateViaCache: "none"`.
+
+Exact redeploy steps:
+1. Edit tracked root files only.
+2. Run `node --check app.js`.
+3. If JS/CSS changed, bump `APP_VERSION` in `app.js`, asset query strings in `index.html`, and `CACHE_NAME` plus asset query strings in `service-worker.js`.
+4. Commit changes: `git add .` then `git commit -m "Clear message"`.
+5. Push: `git push origin main`.
+6. If Netlify auto-deploy is configured, wait for Netlify build.
+7. For manual deploy, run `npx --yes netlify-cli deploy --prod --dir .` or create a clean deploy folder with `git archive` and deploy that folder.
+8. Verify production files with `Invoke-WebRequest` or browser devtools.
+
+## G. Known Bugs and Next Steps
+
+Pending issues:
+- Add print/PDF-friendly reports; currently absent.
+- Add automated smoke tests or at least scripted DOM checks.
+- Add a visible app version/build indicator in Settings so users can confirm updates.
+- Improve PWA stale-cache recovery UX if an old service worker is still controlling an installed app.
+- Consider adding delete/edit controls for target-site shortcuts; currently sites can be added but not removed through UI.
+- Consider adding delete/edit controls for categories with care for existing session references.
+- Reminder scheduling is runtime-only; notifications will not be reliable when browser/PWA is fully closed.
+- Approximate BS fallback may not be exact for all dates.
+- `clearAll()` keeps settings but clears sessions/reflections/focus/friction logs; make sure user understands this before changing behavior.
+
+Priority next tasks:
+1. Add printable/PDF report view for dashboard and analytics. Likely files: `index.html`, `styles.css`, `app.js`.
+2. Add app version/status display in Settings. Likely files: `index.html`, `app.js`.
+3. Add target-site delete/edit UI. Likely files: `app.js`, possibly `index.html`.
+4. Add smoke test script or a simple Playwright-based check if a package setup is introduced. Likely files: new `package.json`, test files.
+5. Improve mobile PWA update instructions or add an in-app "Refresh app" control. Likely files: `index.html`, `app.js`.
+
+## H. Commands
+
+Install:
+- No install needed for the app itself.
+- Optional static server: use existing Python or `npx serve`.
+
+Run locally:
+- Open `index.html` directly for basic use.
+- Full local HTTP/PWA behavior: `python -m http.server 8080`
+- Alternative: `npx serve .`
+- Then open `http://127.0.0.1:8080/`.
+
+Build:
+- No build step. This is a static app.
+
+Test/check:
+- JavaScript syntax: `node --check app.js`
+- Git status: `git status --short --branch`
+- Netlify status: `npx --yes netlify-cli status`
+- Production file check example:
+  - `Invoke-WebRequest -Uri https://dreamy-concha-1b8a32.netlify.app/index.html -UseBasicParsing`
+
+Deploy:
+- Git push path: `git push origin main`
+- Netlify manual production deploy from root: `npx --yes netlify-cli deploy --prod --dir .`
+- Safer clean-folder deploy:
+  - `git archive --format=zip --output=.netlify\deploy-<hash>.zip HEAD`
+  - `Expand-Archive -LiteralPath .netlify\deploy-<hash>.zip -DestinationPath .netlify\deploy-<hash> -Force`
+  - `npx --yes netlify-cli deploy --prod --dir .netlify\deploy-<hash>`
+
+VS Code/terminal notes:
+- Work from `C:\Users\Dell\Documents\URGE TRACKER`.
+- Source of truth is root tracked files, not ignored `urge tracker pwa/`.
+- Avoid committing `.netlify/`, zip files, or duplicate ignored folder.
+
+## I. User Preferences
+
+- Keep app beginner-friendly.
+- Keep UI simple, scientific, dashboard-based, and practical.
+- Do not remove existing functions unless explicitly asked.
+- Prefer dropdowns and app-like forms over raw data entry.
+- Make reports printable/PDF-friendly.
+- Keep Netlify deployment support.
+- Keep PWA install/offline support.
+- Preserve existing data model unless there is a clear migration path.
+
+## Suggested Prompt For New Codex Session
+
+Read `PROJECT_HANDOFF.md` first, then inspect the current repository before making changes. Continue work on the Urge Lab static PWA in `C:\Users\Dell\Documents\URGE TRACKER`. Preserve existing features and data, keep the UI beginner-friendly and dashboard-based, keep Netlify/PWA support, and do not remove functions unless I explicitly ask. Start by confirming the latest Git status, live Netlify URL, and current app version/cache version before editing.

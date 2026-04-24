@@ -203,7 +203,7 @@ Print/PDF/report:
 
 `README.txt`
 - Purpose: Human-readable feature blueprint, limitations, run/deploy notes, file list, privacy note.
-- Recent edits: none in latest commit.
+- Recent edits: updated to mention optional account login, Netlify sync testing, package/function files, and signed-in privacy behavior.
 
 `.gitignore`
 - Purpose: Keeps local deploy artifacts out of Git.
@@ -276,7 +276,7 @@ Account logic:
 - Login/signup UI is handled by the Netlify Identity widget script.
 - Each signed-in user gets a separate local cache key and a separate blob entry keyed by Identity user ID.
 - Browser requests to `/.netlify/functions/account-state` send a JWT in the `Authorization` header.
-- The function reads Identity claims from Netlify `clientContext.custom.netlify`.
+- The function reads Identity user data from Netlify `clientContext.user`, with a fallback parser for `clientContext.custom.netlify`.
 - Cloud sync is pull-on-login/manual sync and push-after-save with a short debounce.
 - If Netlify Identity is not enabled or the function is unavailable, the app stays usable in anonymous local-only mode.
 

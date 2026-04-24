@@ -14,6 +14,7 @@ Feature blueprint:
 - Reminders: risky-hour reminder setup using browser notifications when permission is granted, plus in-app toast fallback.
 - Reflection: three optional end-of-day prompts only.
 - Data: localStorage persistence, JSON backup/import, CSV export.
+- Accounts: optional Netlify Identity login/signup so each signed-in user gets a separate local cache and cloud-backed state.
 - PWA: installable manifest, offline service worker, Netlify static deploy config.
 
 Browser/PWA limitations:
@@ -27,7 +28,9 @@ How to run:
    npx serve .
    or
    python -m http.server 8080
-3. Deploy by uploading this folder to Netlify, Vercel, or GitHub Pages.
+3. For local account-sync/function testing, run npm install, then use Netlify CLI:
+   npx netlify dev
+4. Deploy to Netlify for login and sync. Enable Netlify Identity in the site dashboard before testing signup/login.
 
 Files:
 - index.html: app shell and pages.
@@ -36,8 +39,10 @@ Files:
 - manifest.json: PWA install metadata.
 - service-worker.js: offline cache service worker.
 - netlify.toml: Netlify static deployment config.
+- package.json: Netlify Function dependency and syntax check script.
+- netlify/functions/account-state.js: authenticated account-state sync function backed by Netlify Blobs.
 - icons/icon.svg: vector app icon.
 - icons/icon-192.png, icons/icon-512.png, icons/maskable-512.png: install icons for PWA platforms.
 
 Privacy:
-All data is stored locally in this browser using localStorage. No account, server, analytics SDK, or network sync is included.
+Anonymous data is stored locally in this browser using localStorage. Signed-in account data is also cached locally per user and can sync through Netlify Identity, a Netlify Function, and Netlify Blobs. No analytics SDK is included.

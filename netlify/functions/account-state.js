@@ -15,6 +15,8 @@ function response(statusCode, body) {
 }
 
 function parseIdentityUser(context) {
+  if (context?.clientContext?.user) return context.clientContext.user;
+
   try {
     const raw = context?.clientContext?.custom?.netlify;
     if (!raw) return null;

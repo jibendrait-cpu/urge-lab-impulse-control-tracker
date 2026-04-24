@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260424-dark-theme-3">
+  <link rel="stylesheet" href="styles.css?v=20260424-account-sync-1">
   <title>Urge Lab - Impulse Control Tracker</title>
 </head>
 <body>
@@ -29,7 +29,10 @@
           </div>
         </div>
         <div id="currentDatePill" class="date-pill">Loading date...</div>
-        <button id="installBtn" class="install-btn">Install app</button>
+        <div class="header-actions">
+          <button id="accountBtn" class="account-btn">Account</button>
+          <button id="installBtn" class="install-btn">Install app</button>
+        </div>
       </div>
       <div class="hero-grid">
         <div>
@@ -331,6 +334,25 @@
 
       <section id="settings" class="view">
         <section class="card">
+          <div class="section-head">
+            <div>
+              <h2>Account and sync</h2>
+              <p id="accountSummary" class="subtle">Not signed in. Data stays only on this browser until you log in.</p>
+            </div>
+            <span id="accountMode" class="status-pill">Local only</span>
+          </div>
+          <p id="accountDetail" class="subtle">Use login so each person gets a separate account and synced data across devices.</p>
+          <div class="toolbar">
+            <button id="loginBtn" class="solid-btn">Log in</button>
+            <button id="signupBtn" class="soft-btn">Create account</button>
+            <button id="logoutBtn" class="soft-btn hidden">Log out</button>
+            <button id="syncNowBtn" class="pill" disabled>Sync now</button>
+          </div>
+          <div id="accountFacts" class="status-list"></div>
+          <p class="subtle">Existing anonymous browser data stays on this device unless you import or recreate it inside a signed-in account.</p>
+        </section>
+
+        <section class="card">
           <h2>Appearance</h2>
           <p class="subtle">Choose how the app looks.</p>
           <div class="grid-2">
@@ -444,6 +466,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260424-dark-theme-3"></script>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script src="app.js?v=20260424-account-sync-1"></script>
 </body>
 </html>

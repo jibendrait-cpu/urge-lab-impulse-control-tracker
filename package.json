@@ -1,0 +1,10 @@
+{
+  "name": "urge-lab-impulse-control-tracker",
+  "private": true,
+  "scripts": {
+    "check": "node --check app.js && node --check service-worker.js && node --check netlify/functions/account-state.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^10.0.11"
+  }
+}

@@ -10,8 +10,8 @@ Generated from workspace `C:\Users\Dell\Documents\URGE TRACKER` on 2026-04-24.
 - Netlify project: `dreamy-concha-1b8a32`, project ID `d91d652c-c80e-4fa0-8473-9d5dcafec745`.
 - GitHub remote: `https://github.com/jibendrait-cpu/urge-lab-impulse-control-tracker.git`
 - Branch: `main`.
-- Latest app commit before this handoff file: `850c4ea95f4667727fe7620b5abab2aa434910af` (`Refresh PWA asset versioning for Netlify`).
-- Package manager/build system: none. There is no `package.json`; the app is plain static HTML/CSS/JS.
+- Latest app commit before this handoff file: check `git log -1 --oneline`. This file was updated again after the earlier cache-fix work.
+- Package manager/build system: static HTML/CSS/JS app plus `package.json` for Netlify Function dependencies. No frontend bundler.
 
 ## B. Current Working Status
 
@@ -19,6 +19,7 @@ Already working:
 - Static app loads from `index.html` with `styles.css` and `app.js`.
 - Main screens work as client-side sections: Dashboard, Log, History, Analytics, Focus, Reflect, Settings.
 - Data persists locally in `localStorage`.
+- Signed-in accounts can keep a per-user cloud copy through Netlify Identity plus a Netlify Function backed by Netlify Blobs.
 - PWA manifest, install prompt, icons, offline service worker, and Netlify static deployment are present.
 - Netlify production was manually deployed and verified live after the PWA cache fix.
 
@@ -27,12 +28,18 @@ Recently fixed:
 - `app.js` `APP_VERSION` is `2026-04-24-dark-theme-3`.
 - Service worker cache was bumped to `urge-lab-complete-v7-dark-theme`.
 - Service worker registration now uses `navigator.serviceWorker.register(\`service-worker.js?v=${APP_VERSION}\`, { updateViaCache: "none" })`.
+- Account UI was added in Settings and the header. Login/signup uses the Netlify Identity widget loaded from `https://identity.netlify.com/v1/netlify-identity-widget.js`.
+- Signed-in users now save to account-specific local keys and can sync to `/.netlify/functions/account-state`.
+- `package.json` was added with `@netlify/blobs`, and `netlify/functions/account-state.js` was added for per-user cloud state.
+- Asset versions were bumped again: `styles.css?v=20260424-account-sync-1`, `app.js?v=20260424-account-sync-1`, `APP_VERSION = 2026-04-24-account-sync-1`, `CACHE_NAME = urge-lab-complete-v8-account-sync`.
 - Old duplicate local app folder `urge tracker pwa` was synced with the current root app files, but that folder is ignored by Git.
 - `urge-lab-impulse-control-tracker.zip` was rebuilt locally, but it is ignored by Git.
 
 Still broken or uncertain:
 - No automated browser test suite exists.
 - No print/PDF report feature exists yet.
+- Account login and sync require Netlify Identity to be enabled in the Netlify project before production signup/login will work.
+- Cloud sync depends on the Netlify Function and Blobs runtime; local `index.html` use remains anonymous/local-only unless served in a Netlify-compatible environment.
 - Reminder notifications rely on browser permission and active browser/PWA runtime; background reliability is not guaranteed.
 - PWA cannot block other apps or system-wide websites; it only provides an in-app focus window and friction gate.
 - Netlify deploy can be done manually with CLI, but the project may also auto-deploy from GitHub if configured in Netlify.
@@ -46,6 +53,8 @@ Must be tested manually:
 - Switch light/dark theme and reload.
 - Export/import JSON and export CSV.
 - Test offline reload after one successful online load.
+- Enable Netlify Identity in the site dashboard, sign up a test user, log in, create data, reload, and confirm data syncs back into the same account.
+- Confirm sign-out returns to anonymous local data and does not leak the signed-in account state.
 - Test Netlify redeploy after future changes.
 
 ## C. Full Feature List
@@ -57,11 +66,11 @@ Screens/pages:
 - Analytics: daily/weekly/monthly/yearly range summaries, trend bars, high-risk hour, category analysis, top places/emotions/sources, replacement effectiveness, pattern insights.
 - Focus: protected focus window, friction mode shortcuts, risk reminders.
 - Reflect: end-of-day reflection form and recent reflection list.
-- Settings: appearance/theme, category usual lost time, if-then rescue plans, quick-select lists, data backup.
+- Settings: account and sync, appearance/theme, category usual lost time, if-then rescue plans, quick-select lists, data backup.
 - Modals: end battle/debrief modal and friction mode pause modal.
 
 Buttons and actions:
-- Header: `Install app`.
+- Header: `Account`, `Install app`.
 - Hero/Dashboard: `Impulse Started`, rescue action buttons `Breathe 4-6`, `Drink water`, `Walk`, `Change room`, `Won`, `Defeated`, `Cancel mistaken start`, reason chips, `Save reason`.
 - Tabs: `Dashboard`, `Log`, `History`, `Analytics`, `Focus`, `Reflect`, `Settings`.
 - Log: `Impulse Started`, `Save manual entry`.
@@ -69,7 +78,7 @@ Buttons and actions:
 - Analytics: `Daily`, `Weekly`, `Monthly`, `Yearly`.
 - Focus: `15 min`, `30 min`, `60 min`, `Start custom`, target-site shortcut buttons, `Add gate`, `Enable notifications`, `Add reminder`, per-reminder `Delete`, `Complete focus window`, `Cancel focus window`.
 - Reflect: `Save reflection`.
-- Settings: `Save theme`, per-category `Save`, `Add category`, `Add plan`, per-plan `Delete`, `Save lists`, `Load sample data`, `Export JSON backup`, `Export CSV`, `Import JSON backup`.
+- Settings: `Log in`, `Create account`, `Log out`, `Sync now`, `Save theme`, per-category `Save`, `Add category`, `Add plan`, per-plan `Delete`, `Save lists`, `Load sample data`, `Export JSON backup`, `Export CSV`, `Import JSON backup`.
 - End battle modal: `Save minimal`, `Save with context`.
 - Friction modal: `Cancel`, `Continue to site`.
 
@@ -99,7 +108,9 @@ Dashboard/report/chart elements:
 
 localStorage keys and data structures:
 - `urge-lab-complete-v1`: main JSON state.
+- `urge-lab-complete-v1:account:<userId>`: per-account local cache after sign-in.
 - `urge-lab-app-version`: stores last app version seen by the browser for service-worker update checks.
+- Stored local entries now use a wrapper object `{ state, updatedAt }` when rewritten by the new save path. Legacy direct-state JSON still loads.
 - Main state shape:
   - `sessions`: array of urge sessions.
   - `pledges`: object keyed by AD date `YYYY-MM-DD`, value `{ text, createdAt }`.
@@ -121,6 +132,7 @@ PWA/install/offline:
 - `manifest.json` uses standalone display, portrait orientation, scope `./`, start URL `./index.html`, and icons in `icons/`.
 - `beforeinstallprompt` is captured in `app.js` and shown through `installBtn`.
 - `service-worker.js` caches app shell assets and icons.
+- External account UI script is loaded from Netlify Identity CDN and is not cached in the local service worker asset list.
 - Navigations, `index.html`, `app.js`, and `styles.css` are network-first with offline fallback.
 - Other GET requests are cache-first with network fallback.
 - `SKIP_WAITING` message, `self.skipWaiting()`, and `clients.claim()` are used to activate updates promptly.
@@ -141,33 +153,43 @@ Print/PDF/report:
 - Purpose: Static app shell, metadata, PWA links, all screen markup, modals, datalists, script/style references.
 - Main sections: header hero, tabs, `dashboard`, `battle`, `history`, `analytics`, `focus`, `reflection`, `settings`, `endModal`, `frictionModal`.
 - Important IDs: all buttons/forms listed in section C.
-- Recent edits: asset query strings updated to `dark-theme-3`.
+- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; asset query strings updated to `account-sync-1`.
 
 `styles.css`
 - Purpose: Responsive app styling, CSS variables, light/dark themes, cards, metrics, bars, modals, sticky/fixed mobile tabs.
 - Important variables: `--ink`, `--muted`, `--paper`, `--panel`, `--line`, `--navy`, `--blue`, `--teal`, `--green`, `--amber`, `--red`, `--shadow`, `--radius`.
 - Main layout classes: `.app-shell`, `.hero`, `.tabs`, `.view`, `.card`, `.battle-card`, `.metric-grid`, `.split`, `.grid-2`, `.grid-3`, `.grid-4`, `.modal`, `.sheet`.
-- Recent edits: no tracked edit in latest cache-fix commit, but it is referenced by the new query string.
+- Recent edits: added account button, account status pill, and account facts styling.
 
 `app.js`
-- Purpose: Full client app logic, data model, calculations, rendering, event binding, backup/import/export, reminders, focus/friction, PWA install registration.
-- Important constants/variables: `STORE_KEY`, `APP_VERSION`, `defaults`, `state`, `activeBattle`, `battleTimer`, `activeFocus`, `focusTimer`, `friction`, `frictionTimer`, `deferredPrompt`, `analyticsRange`, `reminderTimers`.
+- Purpose: Full client app logic, data model, calculations, rendering, event binding, backup/import/export, reminders, focus/friction, account login hooks, per-user local caches, and sync calls.
+- Important constants/variables: `STORE_KEY`, `ACCOUNT_STORE_PREFIX`, `SYNC_ENDPOINT`, `APP_VERSION`, `defaults`, `currentStoreKey`, `currentUser`, `state`, `activeBattle`, `battleTimer`, `activeFocus`, `focusTimer`, `friction`, `frictionTimer`, `deferredPrompt`, `analyticsRange`, `reminderTimers`, `syncTimer`, `syncInFlight`, `syncStatus`.
 - Main functions:
-  - Lifecycle/PWA: `init`, `registerServiceWorker`, `bindEvents`.
-  - State: `loadState`, `saveState`.
+  - Lifecycle/PWA/Auth: `init`, `registerServiceWorker`, `bindEvents`, `initIdentity`, `applyAccount`, `openAccountModal`, `logoutAccount`.
+  - State: `blankState`, `normalizeState`, `readStoredBundle`, `loadState`, `writeStoredBundle`, `saveState`.
   - Navigation: `showView`.
   - Battles: `startBattle`, `tickBattle`, `endBattle`, `cancelBattle`, `saveEndedBattle`, `saveManual`, `deleteSession`, `clearAll`.
-  - Rendering: `render`, `renderDashboard`, `renderTodayPattern`, `renderHistory`, `renderAnalytics`, `renderCurrentDate`, `renderRangeSummary`, `renderTrend`, `renderCategoryAnalysis`, `renderReplacementEffectiveness`, `renderInsights`, `renderFocus`, `renderReflections`, `renderSettings`, `renderPledge`, `renderSessionList`, `renderBars`, `renderChips`.
+  - Rendering: `render`, `renderAccountUi`, `renderDashboard`, `renderTodayPattern`, `renderHistory`, `renderAnalytics`, `renderCurrentDate`, `renderRangeSummary`, `renderTrend`, `renderCategoryAnalysis`, `renderReplacementEffectiveness`, `renderInsights`, `renderFocus`, `renderReflections`, `renderSettings`, `renderPledge`, `renderSessionList`, `renderBars`, `renderChips`.
+  - Sync: `scheduleRemoteSync`, `syncAccountState`, `fetchAccountState`, `pushAccountState`, `currentJwt`, `isNewer`.
   - Focus/friction/reminders: `startFocus`, `tickFocus`, `closeFocus`, `addSite`, `openFriction`, `cancelFriction`, `continueFriction`, `enableNotifications`, `addReminder`, `deleteReminderById`, `scheduleReminders`, `fireReminder`, `nextReminderDelay`.
   - Settings: `syncSettingsUi`, `applyTheme`, `syncDynamicOptions`, `savePledge`, `saveCustomPledge`, `todaysPledge`, `saveCategoryEdit`, `addCategory`, `addPlan`, `deletePlanByIndex`, `saveLists`, `saveTheme`.
   - Calculations/helpers: `savedSeconds`, `todayScore`, `recoveryScore`, `currentNoDefeatStreak`, `bestNoDefeatStreak`, `groupSessions`, `trendRow`, `summaryTile`, `countBy`, `hourCounts`, `bestReplacement`, `topEntry`, `parseList`, `nonNegative`, `sum`, `average`, `pct`, date/BS helpers, `normalizeUrl`, `download`, `sessionsToCsv`, `importJson`, `toast`.
-- Recent edits: `APP_VERSION` bumped to `2026-04-24-dark-theme-3`; service worker registration now uses versioned URL and `{ updateViaCache: "none" }`.
+- Recent edits: account sync logic added; `APP_VERSION` bumped to `2026-04-24-account-sync-1`; service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
+
+`netlify/functions/account-state.js`
+- Purpose: Authenticated Netlify Function for reading/writing a signed-in user's app state.
+- Important behavior: reads Identity claims from Netlify `clientContext`, uses `Authorization: Bearer <jwt>` from the browser, stores JSON in Netlify Blobs store `urge-lab-user-state`.
+- Supported methods: `GET` returns `{ state, updatedAt, user }`; `PUT` upserts `{ state, updatedAt }`.
+
+`package.json`
+- Purpose: tracks runtime dependency for Netlify Blobs and provides a repo check script.
+- Important values: dependency `@netlify/blobs`, script `npm run check`.
 
 `service-worker.js`
 - Purpose: Offline cache and update behavior.
-- Important constants: `CACHE_NAME = "urge-lab-complete-v7-dark-theme"`, `ASSETS`.
+- Important constants: `CACHE_NAME = "urge-lab-complete-v8-account-sync"`, `ASSETS`.
 - Main handlers: `message`, `install`, `activate`, `fetch`.
-- Recent edits: cache version bumped to v7 and asset query strings updated to `dark-theme-3`.
+- Recent edits: cache version bumped to v8 and asset query strings updated to `account-sync-1`.
 
 `manifest.json`
 - Purpose: PWA install metadata.
@@ -176,8 +198,8 @@ Print/PDF/report:
 
 `netlify.toml`
 - Purpose: Netlify static deployment config.
-- Important settings: `[build] publish = "."`; no-cache headers for `/index.html` and `/service-worker.js`; security headers; SPA-style redirect `/*` to `/index.html`.
-- Recent edits: no-cache headers were added before the latest cache-fix commit.
+- Important settings: `[build] publish = "."`; `[functions] directory = "netlify/functions"`; no-cache headers for `/index.html` and `/service-worker.js`; security headers; SPA-style redirect `/*` to `/index.html`.
+- Recent edits: explicit functions directory added.
 
 `README.txt`
 - Purpose: Human-readable feature blueprint, limitations, run/deploy notes, file list, privacy note.
@@ -185,7 +207,7 @@ Print/PDF/report:
 
 `.gitignore`
 - Purpose: Keeps local deploy artifacts out of Git.
-- Ignored: `.netlify/`, `*.zip`, `urge tracker pwa/`.
+- Ignored: `.netlify/`, `node_modules/`, `*.zip`, `urge tracker pwa/`.
 
 `icons/`
 - Purpose: PWA icons and SVG favicon.
@@ -206,9 +228,10 @@ Print/PDF/report:
 ## E. Data and Logic
 
 Storage:
-- All user data is local-only in browser `localStorage`.
-- `loadState()` parses `STORE_KEY` and merges saved settings over `defaults`.
-- `saveState()` writes state, rerenders all screens, and reschedules reminders.
+- Anonymous use still stores data locally in browser `localStorage`.
+- Signed-in use stores an account-specific local cache under `urge-lab-complete-v1:account:<userId>` and syncs that state to Netlify Blobs through `/.netlify/functions/account-state`.
+- `readStoredBundle()` supports both legacy raw state and the new wrapped `{ state, updatedAt }` format.
+- `saveState()` writes the local bundle, rerenders the app, reschedules reminders, and queues remote sync when a user is signed in.
 - Import/export use JSON. CSV export only includes session fields.
 
 Date logic:
@@ -249,18 +272,27 @@ Service worker/cache/version update:
 - `service-worker.js` uses `CACHE_NAME`; bump it whenever cached assets change.
 - `index.html` and `service-worker.js` receive no-cache headers in `netlify.toml`.
 
+Account logic:
+- Login/signup UI is handled by the Netlify Identity widget script.
+- Each signed-in user gets a separate local cache key and a separate blob entry keyed by Identity user ID.
+- Browser requests to `/.netlify/functions/account-state` send a JWT in the `Authorization` header.
+- The function reads Identity claims from Netlify `clientContext.custom.netlify`.
+- Cloud sync is pull-on-login/manual sync and push-after-save with a short debounce.
+- If Netlify Identity is not enabled or the function is unavailable, the app stays usable in anonymous local-only mode.
+
 ## F. Deployment Status
 
 - Production URL: https://dreamy-concha-1b8a32.netlify.app
 - Unique deploy URL from last manual production deploy: `https://69eaebc8c2d6326a0d57db83--dreamy-concha-1b8a32.netlify.app`
 - Netlify build/deploy method: static deploy from project root, `publish = "."`.
+- Netlify account sync prerequisites: enable Identity in the site dashboard before testing signup/login in production.
 - Manual deploy used: clean `git archive` extracted into `.netlify/deploy-850c4ea`, then `npx --yes netlify-cli deploy --prod --dir .netlify\deploy-850c4ea`.
 - GitHub push status before handoff file: `main` synced with `origin/main` at `850c4ea`.
 - Cache/service-worker issue: fixed by query-string bumps, cache name bump, no-cache headers, `skipWaiting`, `clients.claim`, and `updateViaCache: "none"`.
 
 Exact redeploy steps:
 1. Edit tracked root files only.
-2. Run `node --check app.js`.
+2. Run `npm run check` or at minimum `node --check app.js` and `node --check netlify/functions/account-state.js`.
 3. If JS/CSS changed, bump `APP_VERSION` in `app.js`, asset query strings in `index.html`, and `CACHE_NAME` plus asset query strings in `service-worker.js`.
 4. Commit changes: `git add .` then `git commit -m "Clear message"`.
 5. Push: `git push origin main`.
@@ -275,6 +307,7 @@ Pending issues:
 - Add automated smoke tests or at least scripted DOM checks.
 - Add a visible app version/build indicator in Settings so users can confirm updates.
 - Improve PWA stale-cache recovery UX if an old service worker is still controlling an installed app.
+- Consider replacing or abstracting the Netlify Identity widget later if you want a custom auth UI or a provider like Supabase/Auth0.
 - Consider adding delete/edit controls for target-site shortcuts; currently sites can be added but not removed through UI.
 - Consider adding delete/edit controls for categories with care for existing session references.
 - Reminder scheduling is runtime-only; notifications will not be reliable when browser/PWA is fully closed.
@@ -283,28 +316,29 @@ Pending issues:
 
 Priority next tasks:
 1. Add printable/PDF report view for dashboard and analytics. Likely files: `index.html`, `styles.css`, `app.js`.
-2. Add app version/status display in Settings. Likely files: `index.html`, `app.js`.
-3. Add target-site delete/edit UI. Likely files: `app.js`, possibly `index.html`.
-4. Add smoke test script or a simple Playwright-based check if a package setup is introduced. Likely files: new `package.json`, test files.
-5. Improve mobile PWA update instructions or add an in-app "Refresh app" control. Likely files: `index.html`, `app.js`.
+2. Enable and verify Netlify Identity in production, then manually test signup/login/logout/sync across two browsers/devices.
+3. Add app version/status display in Settings. Likely files: `index.html`, `app.js`.
+4. Add target-site delete/edit UI. Likely files: `app.js`, possibly `index.html`.
+5. Add smoke test script or a simple Playwright-based check now that `package.json` exists.
 
 ## H. Commands
 
 Install:
-- No install needed for the app itself.
+- Run `npm install` once if you need the Netlify Function dependency locally.
 - Optional static server: use existing Python or `npx serve`.
 
 Run locally:
 - Open `index.html` directly for basic use.
 - Full local HTTP/PWA behavior: `python -m http.server 8080`
 - Alternative: `npx serve .`
+- For account sync/function testing: use `npx netlify dev` after `npm install`. The Netlify Identity widget may ask for the site URL on localhost.
 - Then open `http://127.0.0.1:8080/`.
 
 Build:
-- No build step. This is a static app.
+- No frontend build step. Netlify Functions use the dependency from `package.json`.
 
 Test/check:
-- JavaScript syntax: `node --check app.js`
+- JavaScript syntax: `npm run check`
 - Git status: `git status --short --branch`
 - Netlify status: `npx --yes netlify-cli status`
 - Production file check example:

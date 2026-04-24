@@ -1,5 +1,7 @@
 const STORE_KEY = "urge-lab-complete-v1";
-const APP_VERSION = "2026-04-24-dark-theme-3";
+const ACCOUNT_STORE_PREFIX = `${STORE_KEY}:account:`;
+const SYNC_ENDPOINT = "/.netlify/functions/account-state";
+const APP_VERSION = "2026-04-24-account-sync-1";
 
 const defaults = {
   categories: [
@@ -30,6 +32,8 @@ const defaults = {
   theme: "light"
 };
 
+let currentStoreKey = STORE_KEY;
+let currentUser = null;
 let state = loadState();
 let activeBattle = null;
 let battleTimer = null;
@@ -40,6 +44,16 @@ let frictionTimer = null;
 let deferredPrompt = null;
 let analyticsRange = "daily";
 let reminderTimers = [];
+let syncTimer = null;
+let syncInFlight = false;
+let syncStatus = {
+  mode: "local",
+  message: "Not signed in. Data stays only on this browser.",
+  lastPulledAt: "",
+  lastPushedAt: "",
+  lastError: "",
+  pending: false
+};
 
 const $ = id => document.getElementById(id);
 const $$ = selector => Array.from(document.querySelectorAll(selector));
@@ -54,26 +68,54 @@ const dateKey = value => {
 };
 const id = () => crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
 
-function loadState() {
+function blankState() {
+  return {
+    sessions: [],
+    pledges: {},
+    reflections: [],
+    focusLogs: [],
+    frictionLogs: [],
+    settings: structuredClone(defaults)
+  };
+}
+
+function normalizeState(saved) {
+  return {
+    sessions: Array.isArray(saved?.sessions) ? saved.sessions : [],
+    pledges: saved?.pledges || {},
+    reflections: Array.isArray(saved?.reflections) ? saved.reflections : [],
+    focusLogs: Array.isArray(saved?.focusLogs) ? saved.focusLogs : [],
+    frictionLogs: Array.isArray(saved?.frictionLogs) ? saved.frictionLogs : [],
+    settings: { ...defaults, ...(saved?.settings || {}) }
+  };
+}
+
+function readStoredBundle(storeKey = currentStoreKey) {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORE_KEY));
-    return {
-      sessions: Array.isArray(saved?.sessions) ? saved.sessions : [],
-      pledges: saved?.pledges || {},
-      reflections: Array.isArray(saved?.reflections) ? saved.reflections : [],
-      focusLogs: Array.isArray(saved?.focusLogs) ? saved.focusLogs : [],
-      frictionLogs: Array.isArray(saved?.frictionLogs) ? saved.frictionLogs : [],
-      settings: { ...defaults, ...(saved?.settings || {}) }
-    };
+    const saved = JSON.parse(localStorage.getItem(storeKey));
+    if (saved && typeof saved === "object" && !Array.isArray(saved) && "state" in saved) {
+      return { state: normalizeState(saved.state), updatedAt: saved.updatedAt || "" };
+    }
+    return { state: normalizeState(saved), updatedAt: "" };
   } catch {
-    return { sessions: [], pledges: {}, reflections: [], focusLogs: [], frictionLogs: [], settings: structuredClone(defaults) };
+    return { state: blankState(), updatedAt: "" };
   }
 }
 
-function saveState() {
-  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+function loadState(storeKey = currentStoreKey) {
+  return readStoredBundle(storeKey).state;
+}
+
+function writeStoredBundle(storeKey = currentStoreKey, nextState = state, updatedAt = nowISO()) {
+  localStorage.setItem(storeKey, JSON.stringify({ state: nextState, updatedAt }));
+}
+
+function saveState(options = {}) {
+  const updatedAt = options.updatedAt || nowISO();
+  writeStoredBundle(currentStoreKey, state, updatedAt);
   render();
   scheduleReminders();
+  if (!options.skipRemote) scheduleRemoteSync();
 }
 
 function init() {
@@ -83,6 +125,7 @@ function init() {
   }
   syncSettingsUi();
   bindEvents();
+  initIdentity();
   scheduleReminders();
   render();
   if ("serviceWorker" in navigator) window.addEventListener("load", registerServiceWorker);
@@ -150,6 +193,16 @@ function bindEvents() {
   $("loadSampleData").addEventListener("click", loadSampleData);
   $("cancelFriction").addEventListener("click", cancelFriction);
   $("continueFriction").addEventListener("click", continueFriction);
+  $("accountBtn").addEventListener("click", () => openAccountModal(currentUser ? "login" : "signup"));
+  $("loginBtn").addEventListener("click", () => openAccountModal("login"));
+  $("signupBtn").addEventListener("click", () => openAccountModal("signup"));
+  $("logoutBtn").addEventListener("click", logoutAccount);
+  $("syncNowBtn").addEventListener("click", () => syncAccountState({ manual: true }));
+  window.addEventListener("online", () => {
+    if (currentUser) syncAccountState();
+    renderAccountUi();
+  });
+  window.addEventListener("offline", renderAccountUi);
 
   document.body.addEventListener("click", e => {
     const chip = e.target.closest(".chip[data-chip]");
@@ -178,6 +231,77 @@ function bindEvents() {
     deferredPrompt = null;
     $("installBtn").style.display = "none";
   });
+}
+
+function initIdentity() {
+  const identity = window.netlifyIdentity;
+  if (!identity) {
+    syncStatus = { ...syncStatus, mode: "local", message: "Login service did not load. Using browser-only mode." };
+    return;
+  }
+  identity.on("init", user => applyAccount(user, { silent: true }));
+  identity.on("login", user => {
+    identity.close();
+    applyAccount(user).then(() => toast(`Signed in as ${user.email || "your account"}.`));
+  });
+  identity.on("logout", () => {
+    applyAccount(null).then(() => toast("Signed out. Switched back to local-only data."));
+  });
+  identity.on("error", error => {
+    syncStatus.lastError = error?.message || "Account action failed.";
+    renderAccountUi();
+    toast(syncStatus.lastError);
+  });
+  identity.init();
+}
+
+async function applyAccount(user, options = {}) {
+  clearTimeout(syncTimer);
+  currentUser = user ? simplifyUser(user) : null;
+  currentStoreKey = currentUser ? `${ACCOUNT_STORE_PREFIX}${currentUser.id}` : STORE_KEY;
+  state = loadState(currentStoreKey);
+  syncSettingsUi();
+  scheduleReminders();
+  syncStatus = currentUser ? {
+    mode: "cloud",
+    message: "Signed in. Checking cloud data for this account.",
+    lastPulledAt: "",
+    lastPushedAt: "",
+    lastError: "",
+    pending: false
+  } : {
+    mode: "local",
+    message: "Not signed in. Data stays only on this browser.",
+    lastPulledAt: "",
+    lastPushedAt: "",
+    lastError: "",
+    pending: false
+  };
+  render();
+  if (currentUser) await syncAccountState({ silent: options.silent });
+}
+
+function simplifyUser(user) {
+  return {
+    id: user.id || user.sub || "",
+    email: user.email || "",
+    name: user.user_metadata?.full_name || user.full_name || ""
+  };
+}
+
+function openAccountModal(tab) {
+  const identity = window.netlifyIdentity;
+  if (!identity) {
+    toast("Login service is unavailable in this build.");
+    return;
+  }
+  identity.open(tab);
+}
+
+async function logoutAccount() {
+  const identity = window.netlifyIdentity;
+  if (!identity?.logout) return;
+  await identity.logout();
 }
 
 function showView(view) {
@@ -347,7 +471,55 @@ function render() {
   renderFocus();
   renderReflections();
   renderSettings();
-  $("storageStatus").textContent = `${state.sessions.length} sessions, ${state.reflections.length} reflections, ${state.focusLogs.length} focus logs stored locally.`;
+  renderAccountUi();
+  const scope = currentUser?.email ? `locally cached for ${currentUser.email}` : "stored only on this browser";
+  $("storageStatus").textContent = `${state.sessions.length} sessions, ${state.reflections.length} reflections, ${state.focusLogs.length} focus logs ${scope}.`;
+}
+
+function renderAccountUi() {
+  const summary = currentUser?.email
+    ? `Signed in as ${currentUser.email}. This account keeps its own synced copy of your data.`
+    : "Not signed in. Data stays only on this browser until you log in.";
+  const detail = currentUser?.email
+    ? "Each signed-in user gets a separate cloud-backed state plus a local cache on this device."
+    : "Use login so different people can use separate accounts and sync across devices.";
+  const facts = [
+    {
+      label: "Current mode",
+      value: currentUser ? "Signed-in account with local cache" : "Anonymous local-only mode"
+    },
+    {
+      label: "Sync status",
+      value: accountStatusLine()
+    },
+    {
+      label: "Local data scope",
+      value: currentUser ? `Account cache key: ${currentStoreKey}` : "Anonymous data stays on this browser and does not sync."
+    }
+  ];
+  if (syncStatus.lastPulledAt) facts.push({ label: "Last cloud download", value: formatDualDateTime(syncStatus.lastPulledAt, true) });
+  if (syncStatus.lastPushedAt) facts.push({ label: "Last cloud upload", value: formatDualDateTime(syncStatus.lastPushedAt, true) });
+  if (syncStatus.lastError) facts.push({ label: "Needs attention", value: syncStatus.lastError });
+  $("accountSummary").textContent = summary;
+  $("accountDetail").textContent = detail;
+  $("accountMode").textContent = currentUser ? (syncStatus.pending ? "Syncing..." : "Signed in") : "Local only";
+  $("accountBtn").textContent = currentUser?.email ? currentUser.email.split("@")[0] : "Account";
+  $("loginBtn").classList.toggle("hidden", Boolean(currentUser));
+  $("signupBtn").classList.toggle("hidden", Boolean(currentUser));
+  $("logoutBtn").classList.toggle("hidden", !currentUser);
+  $("syncNowBtn").disabled = !currentUser || syncInFlight;
+  $("accountFacts").innerHTML = facts.map(item => `
+    <div class="status-item">
+      <strong>${esc(item.label)}</strong>
+      <span class="subtle">${esc(item.value)}</span>
+    </div>
+  `).join("");
+}
+
+function accountStatusLine() {
+  if (!navigator.onLine) return "Offline. Changes stay in the local cache until you reconnect.";
+  if (syncStatus.pending || syncInFlight) return "Sync queued or in progress.";
+  return syncStatus.lastError || syncStatus.message;
 }
 
 function renderDashboard() {
@@ -594,6 +766,111 @@ function renderSettings() {
   $("planSettings").innerHTML = state.settings.rescuePlans.length ? state.settings.rescuePlans.map((plan, index) => `
     <div class="entry"><div class="entry-head"><strong>${esc(plan.category)}</strong><button class="link-btn" data-delete-plan="${index}">Delete</button></div><p class="subtle">If ${esc(plan.ifText)}, then ${esc(plan.thenText)}.</p></div>
   `).join("") : `<div class="empty">No if-then rescue plans yet.</div>`;
+}
+
+function scheduleRemoteSync() {
+  clearTimeout(syncTimer);
+  if (!currentUser) return;
+  syncStatus.pending = true;
+  syncStatus.lastError = "";
+  renderAccountUi();
+  syncTimer = setTimeout(() => {
+    syncAccountState({ preferPush: true });
+  }, 900);
+}
+
+async function syncAccountState(options = {}) {
+  if (!currentUser || syncInFlight) {
+    renderAccountUi();
+    return;
+  }
+  syncInFlight = true;
+  syncStatus.pending = true;
+  syncStatus.lastError = "";
+  renderAccountUi();
+  try {
+    const localBundle = readStoredBundle(currentStoreKey);
+    const response = await fetchAccountState();
+    const remote = await response.json();
+    const remoteUpdatedAt = remote.updatedAt || "";
+    const remoteState = remote.state ? normalizeState(remote.state) : null;
+
+    if (remoteState && isNewer(remoteUpdatedAt, localBundle.updatedAt) && !options.preferPush) {
+      state = remoteState;
+      writeStoredBundle(currentStoreKey, state, remoteUpdatedAt);
+      syncSettingsUi();
+      render();
+      scheduleReminders();
+      syncStatus.lastPulledAt = remoteUpdatedAt;
+      syncStatus.message = "Loaded the latest data from your account.";
+      if (options.manual) toast("Downloaded the latest account data.");
+    } else if ((!remoteState && localBundle.updatedAt) || isNewer(localBundle.updatedAt, remoteUpdatedAt) || options.preferPush) {
+      await pushAccountState(localBundle.state, localBundle.updatedAt || nowISO());
+      if (options.manual) toast("Synced this device to your account.");
+    } else {
+      syncStatus.message = "Account is already up to date.";
+      if (options.manual) toast("Account is already up to date.");
+    }
+  } catch (error) {
+    syncStatus.lastError = error.message || "Unable to sync right now.";
+    syncStatus.message = "Signed in, but cloud sync needs attention.";
+    if (options.manual && navigator.onLine) toast(syncStatus.lastError);
+  } finally {
+    syncInFlight = false;
+    syncStatus.pending = false;
+    renderAccountUi();
+  }
+}
+
+async function fetchAccountState() {
+  const jwt = await currentJwt();
+  if (!jwt) throw new Error("Please sign in again before syncing.");
+  const response = await fetch(SYNC_ENDPOINT, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${jwt}` },
+    cache: "no-store"
+  });
+  if (response.status === 401) throw new Error("Netlify Identity must be enabled and your session must be valid.");
+  if (response.status === 404) throw new Error("Sync function is not deployed yet.");
+  if (!response.ok) throw new Error(`Cloud sync failed (${response.status}).`);
+  return response;
+}
+
+async function pushAccountState(nextState, updatedAt) {
+  const jwt = await currentJwt();
+  if (!jwt) throw new Error("Please sign in again before syncing.");
+  const response = await fetch(SYNC_ENDPOINT, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${jwt}`
+    },
+    body: JSON.stringify({ state: nextState, updatedAt }),
+    cache: "no-store"
+  });
+  if (response.status === 401) throw new Error("Netlify Identity must be enabled and your session must be valid.");
+  if (response.status === 404) throw new Error("Sync function is not deployed yet.");
+  if (!response.ok) throw new Error(`Upload failed (${response.status}).`);
+  const saved = await response.json();
+  writeStoredBundle(currentStoreKey, nextState, saved.updatedAt || updatedAt);
+  syncStatus.lastPushedAt = saved.updatedAt || updatedAt;
+  syncStatus.message = "Latest changes were uploaded to your account.";
+}
+
+async function currentJwt() {
+  const identity = window.netlifyIdentity;
+  if (!identity?.refresh) return "";
+  try {
+    return await identity.refresh();
+  } catch {
+    return "";
+  }
+}
+
+function isNewer(left, right) {
+  if (!left) return false;
+  if (!right) return true;
+  return new Date(left).getTime() > new Date(right).getTime();
 }
 
 function syncSettingsUi() {
@@ -1221,14 +1498,7 @@ async function importJson(event) {
   try {
     const imported = JSON.parse(await file.text());
     if (!Array.isArray(imported.sessions)) throw new Error("Missing sessions array");
-    state = {
-      sessions: imported.sessions || [],
-      pledges: imported.pledges || {},
-      reflections: imported.reflections || [],
-      focusLogs: imported.focusLogs || [],
-      frictionLogs: imported.frictionLogs || [],
-      settings: { ...defaults, ...(imported.settings || {}) }
-    };
+    state = normalizeState(imported);
     syncSettingsUi();
     saveState();
   } catch (error) {

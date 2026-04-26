@@ -1,7 +1,7 @@
 const STORE_KEY = "urge-lab-complete-v1";
 const ACCOUNT_STORE_PREFIX = `${STORE_KEY}:account:`;
 const SYNC_ENDPOINT = "/.netlify/functions/account-state";
-const APP_VERSION = "2026-04-26-mobile-header-1";
+const APP_VERSION = "2026-04-26-dev-cache-1";
 
 const defaults = {
   categories: [
@@ -216,7 +216,10 @@ function saveState(options = {}) {
 }
 
 function init() {
-  if (localStorage.getItem("urge-lab-app-version") !== APP_VERSION && "serviceWorker" in navigator) {
+  const localDev = isLocalDev();
+  if (localDev) {
+    disableLocalServiceWorker();
+  } else if (localStorage.getItem("urge-lab-app-version") !== APP_VERSION && "serviceWorker" in navigator) {
     navigator.serviceWorker.getRegistrations?.().then(registrations => registrations.forEach(registration => registration.update()));
     localStorage.setItem("urge-lab-app-version", APP_VERSION);
   }
@@ -226,7 +229,30 @@ function init() {
   initIdentity();
   scheduleReminders();
   render();
-  if ("serviceWorker" in navigator) window.addEventListener("load", registerServiceWorker);
+  if ("serviceWorker" in navigator && !localDev) window.addEventListener("load", registerServiceWorker);
+}
+
+function isLocalDev() {
+  return location.protocol === "file:" || ["localhost", "127.0.0.1", "0.0.0.0"].includes(location.hostname);
+}
+
+async function disableLocalServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations?.() || [];
+    await Promise.all(registrations.map(registration => registration.unregister()));
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(key => key.startsWith("urge-lab")).map(key => caches.delete(key)));
+    }
+    const reloadKey = "urge-lab-dev-sw-reloaded";
+    if (navigator.serviceWorker.controller && sessionStorage.getItem(reloadKey) !== APP_VERSION) {
+      sessionStorage.setItem(reloadKey, APP_VERSION);
+      window.location.reload();
+    }
+  } catch {
+    // Local preview must continue even if a browser blocks cache cleanup.
+  }
 }
 
 function registerServiceWorker() {

@@ -22,10 +22,11 @@ Browser/PWA limitations:
 - A pure browser app cannot block other mobile apps, system-wide websites, or device settings.
 - Browser notifications are permission-based and most reliable while the browser/app is running; exact background alarms are not guaranteed on all devices.
 - The implemented alternative is an in-app focus lock screen, target-site friction gate, countdowns, completion logs, notification permission flow, and local reminder scheduling.
+- Local previews on VS Code Live Server or localhost intentionally disable the service worker and clear only Urge Lab caches so edits show immediately. Production Netlify keeps PWA offline caching.
 
 How to run:
-1. Open index.html directly in a browser for basic use.
-2. For full PWA/offline behavior, run a local static server from this folder:
+1. Open index.html directly or use VS Code Live Server from the project root for basic local preview.
+2. For local HTTP preview without production PWA caching, run a local static server from this folder:
    npx serve .
    or
    python -m http.server 8080

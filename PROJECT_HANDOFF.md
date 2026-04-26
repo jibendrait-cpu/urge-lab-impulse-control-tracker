@@ -39,6 +39,8 @@ Recently fixed:
 - Asset versions were bumped for the pledge picker: `styles.css?v=20260426-pledge-picker-1`, `app.js?v=20260426-pledge-picker-1`, `APP_VERSION = 2026-04-26-pledge-picker-1`, `CACHE_NAME = urge-lab-complete-v10-pledge-picker`.
 - Mobile header/banner was compacted with mobile-only CSS: smaller hero padding/radius, inline brand/actions row, compact date row, reduced headline/copy sizing, and shorter `Impulse Started` CTA.
 - Asset versions were bumped for the mobile header update: `styles.css?v=20260426-mobile-header-1`, `app.js?v=20260426-mobile-header-1`, `APP_VERSION = 2026-04-26-mobile-header-1`, `CACHE_NAME = urge-lab-complete-v11-mobile-header`.
+- Live Server stale preview issue was fixed by disabling/unregistering the app service worker on localhost/file previews, clearing only `urge-lab*` caches in local development, adding a dev-host no-cache guard in `service-worker.js`, and adding `.vscode/settings.json` so Live Server uses the project root while ignoring stale generated folders.
+- Asset versions were bumped for the dev-cache fix: `styles.css?v=20260426-dev-cache-1`, `app.js?v=20260426-dev-cache-1`, `APP_VERSION = 2026-04-26-dev-cache-1`, `CACHE_NAME = urge-lab-complete-v12-dev-cache`.
 - Production verification after deploy: `https://dreamy-concha-1b8a32.netlify.app/index.html` returned `app.js?v=20260426-quick-urge-1` and contained `quick-action-grid`.
 - Latest manual production deploy unique URL: `https://69edd2f5933e0d5c21b64ab3--dreamy-concha-1b8a32.netlify.app`.
 - Old duplicate local app folder `urge tracker pwa` was synced with the current root app files, but that folder is ignored by Git.
@@ -163,7 +165,7 @@ Print/PDF/report:
 - Purpose: Static app shell, metadata, PWA links, all screen markup, modals, datalists, script/style references.
 - Main sections: header hero, tabs, `dashboard`, `battle`, `history`, `analytics`, `focus`, `reflection`, `settings`, `endModal`, `frictionModal`.
 - Important IDs: all buttons/forms listed in section C.
-- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; Log tab replaced with quick urge picker; Daily Check-In reason picker modal added; mobile header compacted; asset query strings updated to `mobile-header-1`.
+- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; Log tab replaced with quick urge picker; Daily Check-In reason picker modal added; mobile header compacted; asset query strings updated to `dev-cache-1`.
 
 `styles.css`
 - Purpose: Responsive app styling, CSS variables, light/dark themes, cards, metrics, bars, modals, sticky/fixed mobile tabs.
@@ -175,7 +177,7 @@ Print/PDF/report:
 - Purpose: Full client app logic, data model, calculations, rendering, event binding, backup/import/export, reminders, focus/friction, account login hooks, per-user local caches, and sync calls.
 - Important constants/variables: `STORE_KEY`, `ACCOUNT_STORE_PREFIX`, `SYNC_ENDPOINT`, `APP_VERSION`, `defaults`, `URGE_GROUPS`, `INTENSITY_OPTIONS`, `DURATION_OPTIONS`, `currentStoreKey`, `currentUser`, `state`, `quickLog`, `activeBattle`, `pendingBattleContext`, `battleTimer`, `activeFocus`, `focusTimer`, `friction`, `frictionTimer`, `deferredPrompt`, `analyticsRange`, `reminderTimers`, `syncTimer`, `syncInFlight`, `syncStatus`.
 - Main functions:
-  - Lifecycle/PWA/Auth: `init`, `registerServiceWorker`, `bindEvents`, `initIdentity`, `applyAccount`, `openAccountModal`, `logoutAccount`.
+  - Lifecycle/PWA/Auth: `init`, `isLocalDev`, `disableLocalServiceWorker`, `registerServiceWorker`, `bindEvents`, `initIdentity`, `applyAccount`, `openAccountModal`, `logoutAccount`.
   - State: `blankState`, `normalizeState`, `readStoredBundle`, `loadState`, `writeStoredBundle`, `saveState`.
   - Navigation: `showView`.
   - Quick logger: `ensureQuickLogDefaults`, `renderQuickLog`, `selectQuickAction`, `selectQuickPick`, `selectUrgeGroup`, `selectUrgeSub`, `selectIntensity`, `selectDuration`, `togglePinnedUrge`, `selectedUrge`, `urgeFromLabel`, `quickPickItems`, `smartDefaultsFor`, `durationOptionByValue`.
@@ -185,7 +187,7 @@ Print/PDF/report:
   - Focus/friction/reminders: `startFocus`, `tickFocus`, `closeFocus`, `addSite`, `openFriction`, `cancelFriction`, `continueFriction`, `enableNotifications`, `addReminder`, `deleteReminderById`, `scheduleReminders`, `fireReminder`, `nextReminderDelay`.
   - Settings: `syncSettingsUi`, `applyTheme`, `syncDynamicOptions`, `openPledgePicker`, `closePledgePicker`, `savePledge`, `saveCustomPledge`, `todaysPledge`, `saveCategoryEdit`, `addCategory`, `addPlan`, `deletePlanByIndex`, `saveLists`, `saveTheme`.
   - Calculations/helpers: `savedSeconds`, `todayScore`, `recoveryScore`, `currentNoDefeatStreak`, `bestNoDefeatStreak`, `groupSessions`, `trendRow`, `summaryTile`, `countBy`, `hourCounts`, `bestReplacement`, `topEntry`, `parseList`, `nonNegative`, `sum`, `average`, `pct`, date/BS helpers, `normalizeUrl`, `download`, `sessionsToCsv`, `importJson`, `toast`.
-- Recent edits: account sync logic added; quick urge picker added; Daily Check-In pledge picker added; `APP_VERSION` bumped to `2026-04-26-mobile-header-1`; service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
+- Recent edits: account sync logic added; quick urge picker added; Daily Check-In pledge picker added; local development now unregisters service workers and clears app caches; `APP_VERSION` bumped to `2026-04-26-dev-cache-1`; production service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
 
 `netlify/functions/account-state.js`
 - Purpose: Authenticated Netlify Function for reading/writing a signed-in user's app state.
@@ -202,9 +204,13 @@ Print/PDF/report:
 
 `service-worker.js`
 - Purpose: Offline cache and update behavior.
-- Important constants: `CACHE_NAME = "urge-lab-complete-v11-mobile-header"`, `ASSETS`.
+- Important constants: `CACHE_NAME = "urge-lab-complete-v12-dev-cache"`, `ASSETS`, `DEV_HOSTS`, `IS_DEV_HOST`.
 - Main handlers: `message`, `install`, `activate`, `fetch`.
-- Recent edits: cache version bumped to v11 and asset query strings updated to `mobile-header-1`.
+- Recent edits: cache version bumped to v12, asset query strings updated to `dev-cache-1`, and local dev hosts bypass fetch caching.
+
+`.vscode/settings.json`
+- Purpose: VS Code Live Server local-preview guardrails.
+- Important settings: root is `/`; ignores `.netlify/`, `node_modules/`, `.git/`, and duplicate ignored `urge tracker pwa/`.
 
 `manifest.json`
 - Purpose: PWA install metadata.
@@ -286,6 +292,7 @@ Service worker/cache/version update:
 - `updateViaCache: "none"` tells the browser not to satisfy service worker update checks from HTTP cache.
 - `service-worker.js` uses `CACHE_NAME`; bump it whenever cached assets change.
 - `index.html` and `service-worker.js` receive no-cache headers in `netlify.toml`.
+- Local development on `localhost`, `127.0.0.1`, `0.0.0.0`, or `file://` does not register the production service worker. If one is already controlling the page, `disableLocalServiceWorker()` unregisters it, deletes only `urge-lab*` caches, and reloads once.
 
 Account logic:
 - Login/signup UI is handled by the Netlify Identity widget script.
@@ -343,8 +350,8 @@ Install:
 - Optional static server: use existing Python or `npx serve`.
 
 Run locally:
-- Open `index.html` directly for basic use.
-- Full local HTTP/PWA behavior: `python -m http.server 8080`
+- Open `index.html` directly or use VS Code Live Server for basic local preview. Local preview intentionally disables the PWA service worker so edits show immediately.
+- Full local HTTP behavior without PWA caching: `python -m http.server 8080`
 - Alternative: `npx serve .`
 - For account sync/function testing: use `npx netlify dev` after `npm install`. The Netlify Identity widget may ask for the site URL on localhost.
 - Then open `http://127.0.0.1:8080/`.

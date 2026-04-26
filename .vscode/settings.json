@@ -1,0 +1,10 @@
+{
+  "liveServer.settings.root": "/",
+  "liveServer.settings.ignoreFiles": [
+    ".vscode/**",
+    "**/.git/**",
+    "**/.netlify/**",
+    "**/node_modules/**",
+    "**/urge tracker pwa/**"
+  ]
+}

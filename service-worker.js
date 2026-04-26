@@ -1,9 +1,9 @@
-const CACHE_NAME = "urge-lab-complete-v10-pledge-picker";
+const CACHE_NAME = "urge-lab-complete-v11-mobile-header";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260426-pledge-picker-1",
-  "./app.js?v=20260426-pledge-picker-1",
+  "./styles.css?v=20260426-mobile-header-1",
+  "./app.js?v=20260426-mobile-header-1",
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",

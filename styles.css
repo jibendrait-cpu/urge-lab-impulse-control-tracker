@@ -615,13 +615,110 @@ main, .view, .form-grid, .entry-list, .settings-list, .bar-list, .compare { disp
 }
 
 @media (max-width: 520px) {
-  .app-shell { padding: 12px 10px 94px; }
-  .hero { padding: 20px; border-radius: 28px; }
-  .topbar, .section-head { align-items: flex-start; flex-direction: column; }
-  .header-actions { width: 100%; justify-content: stretch; }
-  .header-actions > button { width: 100%; }
+  .app-shell { padding: 8px 8px 94px; }
+  .hero {
+    padding: 12px;
+    border-radius: 20px;
+  }
+  .hero:after { display: none; }
+  .topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand actions"
+      "date date";
+    align-items: center;
+    gap: 8px;
+  }
+  .section-head { align-items: flex-start; flex-direction: column; }
+  .brand { grid-area: brand; min-width: 0; gap: 8px; }
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+  }
+  .brand strong {
+    display: block;
+    overflow: hidden;
+    font-size: 0.98rem;
+    line-height: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .brand span {
+    overflow: hidden;
+    max-width: 42vw;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .header-actions {
+    grid-area: actions;
+    width: auto;
+    gap: 6px;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+  .header-actions > button,
+  .account-btn,
+  .install-btn {
+    width: auto;
+    min-height: 36px;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .hero .eyebrow {
+    margin-bottom: 4px;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+  }
+  h1 {
+    max-width: none;
+    font-size: 1.52rem;
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+  }
+  .hero-copy {
+    margin: 6px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.28;
+  }
+  .primary-cta {
+    min-height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 13px;
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+  }
+  .primary-cta strong {
+    font-size: 1.2rem;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+  .primary-cta span {
+    margin-top: 0;
+    font-size: 0.76rem;
+    text-align: right;
+  }
   .compact-select { min-height: 58px; }
-  .date-pill { max-width: none; text-align: left; }
+  .date-pill {
+    grid-area: date;
+    max-width: none;
+    padding: 7px 10px;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    text-align: left;
+  }
   .metric-grid, .range-summary, .shortcut-grid, .battle-actions { grid-template-columns: 1fr; }
   .quick-action-grid { grid-template-columns: 1fr; }
   .urge-family-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

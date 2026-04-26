@@ -1,7 +1,7 @@
 const STORE_KEY = "urge-lab-complete-v1";
 const ACCOUNT_STORE_PREFIX = `${STORE_KEY}:account:`;
 const SYNC_ENDPOINT = "/.netlify/functions/account-state";
-const APP_VERSION = "2026-04-24-account-sync-1";
+const APP_VERSION = "2026-04-26-quick-urge-1";
 
 const defaults = {
   categories: [
@@ -28,14 +28,111 @@ const defaults = {
     { name: "Instagram", url: "https://www.instagram.com" },
     { name: "Shopping", url: "https://www.amazon.com" }
   ],
+  pinnedUrges: ["Random scrolling", "Porn urge", "Avoiding work", "Sugar", "Restless feeling"],
   reminders: [],
   theme: "light"
 };
 
+const URGE_GROUPS = [
+  {
+    id: "phone",
+    label: "Phone",
+    fullLabel: "Phone / Social media",
+    icon: "PH",
+    tone: "blue",
+    defaultSource: "Phone notification",
+    defaultRecovery: "Closed phone",
+    options: ["TikTok", "YouTube", "Instagram", "Random scrolling", "Checking notifications", "News refresh"]
+  },
+  {
+    id: "sexual",
+    label: "Sexual",
+    fullLabel: "Sexual urge",
+    icon: "SX",
+    tone: "red",
+    defaultSource: "Sexual urge",
+    defaultRecovery: "Changed room",
+    options: ["Fantasy", "Porn urge", "Stimulation seeking", "Lust trigger", "Idle arousal"]
+  },
+  {
+    id: "food",
+    label: "Food",
+    fullLabel: "Food / consumption",
+    icon: "FD",
+    tone: "amber",
+    defaultSource: "Idle time",
+    defaultRecovery: "Drink water",
+    options: ["Sugar", "Junk food", "Overeating", "Unnecessary snacking", "Binge eating"]
+  },
+  {
+    id: "avoidance",
+    label: "Avoid",
+    fullLabel: "Procrastination / avoidance",
+    icon: "AV",
+    tone: "teal",
+    defaultSource: "Idle time",
+    defaultRecovery: "Two-minute start",
+    options: ["Avoiding work", "Avoiding study", "Lying down without need", "Delaying task start", "Escape into distraction"]
+  },
+  {
+    id: "emotion",
+    label: "Emotion",
+    fullLabel: "Anger / emotional reaction",
+    icon: "EM",
+    tone: "red",
+    defaultSource: "Argument",
+    defaultRecovery: "Breathing",
+    options: ["Anger outburst", "Revenge thought", "Ego reaction", "Validation craving", "Jealousy comparison"]
+  },
+  {
+    id: "spending",
+    label: "Spend",
+    fullLabel: "Spending / impulse buying",
+    icon: "SP",
+    tone: "green",
+    defaultSource: "Shopping app",
+    defaultRecovery: "Wait 24 hours",
+    options: ["Online shopping", "Unnecessary purchase", "Browsing shopping apps", "Price checking", "Buying for dopamine"]
+  },
+  {
+    id: "other",
+    label: "Unsure",
+    fullLabel: "Other / unsure",
+    icon: "?",
+    tone: "neutral",
+    defaultSource: "Mixed trigger",
+    defaultRecovery: "Breathing",
+    options: ["Restless feeling", "Unclear urge", "Mixed trigger", "General craving", "Custom"]
+  }
+];
+
+const INTENSITY_OPTIONS = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "extreme", label: "Extreme" }
+];
+
+const DURATION_OPTIONS = [
+  { value: "under_1", label: "<1 min", seconds: 30 },
+  { value: "1_5", label: "1-5 min", seconds: 180 },
+  { value: "5_15", label: "5-15 min", seconds: 600 },
+  { value: "15_30", label: "15-30 min", seconds: 1350 },
+  { value: "30_plus", label: "30+ min", seconds: 2400 }
+];
+
 let currentStoreKey = STORE_KEY;
 let currentUser = null;
 let state = loadState();
+let quickLog = {
+  action: "urge",
+  groupId: "phone",
+  subOption: "Random scrolling",
+  intensity: "medium",
+  duration: "1_5"
+};
 let activeBattle = null;
+let pendingBattleContext = null;
 let battleTimer = null;
 let activeFocus = null;
 let focusTimer = null;
@@ -125,6 +222,7 @@ function init() {
   }
   syncSettingsUi();
   bindEvents();
+  ensureQuickLogDefaults();
   initIdentity();
   scheduleReminders();
   render();
@@ -159,7 +257,7 @@ function registerServiceWorker() {
 function bindEvents() {
   $$(".tab").forEach(tab => tab.addEventListener("click", () => showView(tab.dataset.view)));
   $("startImpulse").addEventListener("click", () => startBattle());
-  $("startImpulseLog").addEventListener("click", () => startBattle(getSelectedStartCategory()));
+  $("startImpulseLog")?.addEventListener("click", () => startBattle(getSelectedStartCategory()));
   $("wonBattle").addEventListener("click", () => endBattle("won"));
   $("lostBattle").addEventListener("click", () => endBattle("defeated"));
   $("cancelBattle").addEventListener("click", cancelBattle);
@@ -198,6 +296,12 @@ function bindEvents() {
   $("signupBtn").addEventListener("click", () => openAccountModal("signup"));
   $("logoutBtn").addEventListener("click", logoutAccount);
   $("syncNowBtn").addEventListener("click", () => syncAccountState({ manual: true }));
+  $("clearSubOption").addEventListener("click", () => {
+    quickLog.subOption = "";
+    renderQuickLog();
+  });
+  $("togglePinnedUrge").addEventListener("click", togglePinnedUrge);
+  $("detailMode").addEventListener("toggle", renderQuickLog);
   window.addEventListener("online", () => {
     if (currentUser) syncAccountState();
     renderAccountUi();
@@ -217,6 +321,18 @@ function bindEvents() {
     if (shortcut) openFriction(Number(shortcut.dataset.siteIndex));
     const reason = e.target.closest("[data-reason]");
     if (reason) savePledge(reason.dataset.reason);
+    const quickAction = e.target.closest("[data-quick-action]");
+    if (quickAction) selectQuickAction(quickAction.dataset.quickAction);
+    const quickPick = e.target.closest("[data-quick-pick]");
+    if (quickPick) selectQuickPick(quickPick.dataset.quickPick);
+    const urgeGroup = e.target.closest("[data-urge-group]");
+    if (urgeGroup) selectUrgeGroup(urgeGroup.dataset.urgeGroup);
+    const urgeSub = e.target.closest("[data-urge-sub]");
+    if (urgeSub) selectUrgeSub(urgeSub.dataset.urgeSub);
+    const intensity = e.target.closest("[data-intensity]");
+    if (intensity) selectIntensity(intensity.dataset.intensity);
+    const duration = e.target.closest("[data-duration]");
+    if (duration) selectDuration(duration.dataset.duration);
   });
 
   window.addEventListener("beforeinstallprompt", event => {
@@ -260,6 +376,7 @@ async function applyAccount(user, options = {}) {
   currentUser = user ? simplifyUser(user) : null;
   currentStoreKey = currentUser ? `${ACCOUNT_STORE_PREFIX}${currentUser.id}` : STORE_KEY;
   state = loadState(currentStoreKey);
+  ensureQuickLogDefaults();
   syncSettingsUi();
   scheduleReminders();
   syncStatus = currentUser ? {
@@ -309,14 +426,14 @@ function showView(view) {
   $$(".view").forEach(panel => panel.classList.toggle("active", panel.id === view));
 }
 
-function startBattle(category = state.settings.categories[0]?.name || "Other") {
+function startBattle(category = state.settings.categories[0]?.name || "Other", context = {}) {
   if (activeBattle) {
     showView("dashboard");
     toast("A battle is already active.");
     return;
   }
   const custom = $("preCustomCategory")?.value?.trim();
-  activeBattle = { id: id(), startTime: nowISO(), category: custom || category };
+  activeBattle = { id: id(), startTime: nowISO(), category: custom || category, ...context };
   $("activeBattleCard").classList.remove("hidden");
   showView("dashboard");
   tickBattle();
@@ -336,6 +453,7 @@ function tickBattle() {
 function endBattle(outcome) {
   if (!activeBattle) return;
   const end = nowISO();
+  pendingBattleContext = activeBattle;
   $("endOutcome").value = outcome;
   $("endStart").value = activeBattle.startTime;
   $("endEnd").value = end;
@@ -369,6 +487,9 @@ function saveEndedBattle(minimal) {
     endTime: end,
     outcome: $("endOutcome").value,
     category: $("endCategory").value || "Other",
+    urgeGroup: pendingBattleContext?.urgeGroup || "",
+    urgeSubcategory: pendingBattleContext?.urgeSubcategory || "",
+    intensity: pendingBattleContext?.intensity || "",
     durationSeconds: Math.max(1, Math.round((new Date(end) - new Date(start)) / 1000)),
     place: minimal ? "" : selectedOrCustom("place", "customPlace"),
     emotion: minimal ? "" : selectedOrCustom("emotion", "customEmotion"),
@@ -377,6 +498,7 @@ function saveEndedBattle(minimal) {
     recoveryMinutes: minimal ? 0 : nonNegative($("endRecovery").value),
     notes: minimal ? "" : $("endNotes").value.trim()
   };
+  pendingBattleContext = null;
   state.sessions.unshift(session);
   $("endForm").reset();
   clearChipSelections();
@@ -386,25 +508,44 @@ function saveEndedBattle(minimal) {
 
 function saveManual(event) {
   event.preventDefault();
-  const mins = nonNegative($("manualDuration").value);
+  const selected = selectedUrge();
+  if (quickLog.action === "urge") {
+    startBattle(selected.category, {
+      urgeGroup: selected.group.fullLabel,
+      urgeSubcategory: selected.subOption,
+      intensity: quickLog.intensity
+    });
+    toast("Timer started.");
+    return;
+  }
+  const outcome = quickLog.action;
+  const durationOption = durationOptionByValue(quickLog.duration);
+  const mins = Math.max(1, Math.round((durationOption.seconds || 60) / 60));
   const end = new Date();
-  const start = new Date(end.getTime() - mins * 60000);
+  const start = new Date(end.getTime() - (durationOption.seconds || mins * 60) * 1000);
+  const smart = smartDefaultsFor(selected);
   state.sessions.unshift({
     id: id(),
     startTime: start.toISOString(),
     endTime: end.toISOString(),
-    outcome: $("manualOutcome").value,
-    category: $("manualCategory").value || "Other",
-    durationSeconds: mins * 60,
+    outcome,
+    category: selected.category,
+    urgeGroup: selected.group.fullLabel,
+    urgeSubcategory: selected.subOption,
+    intensity: quickLog.intensity,
+    durationBucket: quickLog.duration,
+    durationSeconds: durationOption.seconds || mins * 60,
     place: $("manualPlace").value.trim(),
     emotion: $("manualEmotion").value.trim(),
-    source: $("manualSource").value.trim(),
-    replacement: $("manualReplacement").value.trim(),
+    source: $("manualSource").value.trim() || smart.source,
+    replacement: $("manualReplacement").value.trim() || (outcome === "won" ? smart.replacement : ""),
     recoveryMinutes: 0,
     notes: $("manualNotes").value.trim()
   });
   event.target.reset();
+  quickLog.action = "urge";
   saveState();
+  toast(outcome === "won" ? "Win saved." : "Slip saved.");
 }
 
 function loadSampleData() {
@@ -464,6 +605,7 @@ function render() {
   applyTheme();
   renderCurrentDate();
   syncDynamicOptions();
+  renderQuickLog();
   renderPledge();
   renderDashboard();
   renderHistory();
@@ -520,6 +662,161 @@ function accountStatusLine() {
   if (!navigator.onLine) return "Offline. Changes stay in the local cache until you reconnect.";
   if (syncStatus.pending || syncInFlight) return "Sync queued or in progress.";
   return syncStatus.lastError || syncStatus.message;
+}
+
+function ensureQuickLogDefaults() {
+  const firstPinned = state.settings.pinnedUrges?.[0];
+  if (firstPinned) {
+    const pick = urgeFromLabel(firstPinned);
+    quickLog.groupId = pick.group.id;
+    quickLog.subOption = pick.subOption;
+  }
+}
+
+function renderQuickLog() {
+  if (!$("urgeGroupGrid")) return;
+  const selected = selectedUrge();
+  const isPinned = state.settings.pinnedUrges?.includes(selected.category);
+  $("manualOutcome").value = quickLog.action === "urge" ? "won" : quickLog.action;
+  $("manualCategory").value = selected.category;
+  $("manualDuration").value = Math.max(1, Math.round(durationOptionByValue(quickLog.duration).seconds / 60));
+  $("quickModePill").textContent = $("detailMode")?.open ? "Detail" : "Simple";
+  $("quickSaveBtn").textContent = quickLog.action === "urge"
+    ? "Start urge timer"
+    : (quickLog.action === "won" ? "Save win" : "Save slip");
+  $("selectedUrgeLabel").textContent = selected.subOption || selected.group.fullLabel;
+  $("togglePinnedUrge").classList.toggle("hidden", !selected.category);
+  $("togglePinnedUrge").textContent = isPinned ? "Unpin" : "Pin";
+  $("quickPickChips").innerHTML = quickPickItems().map(item => `
+    <button type="button" class="quick-pill ${item.category === selected.category ? "active" : ""}" data-quick-pick="${esc(item.category)}">
+      <small>${esc(item.type)}</small>
+      <span>${esc(item.category)}</span>
+    </button>
+  `).join("") || `<div class="empty">Your recent urges will appear here.</div>`;
+  $("urgeGroupGrid").innerHTML = URGE_GROUPS.map(group => `
+    <button type="button" class="urge-family ${group.tone} ${group.id === quickLog.groupId ? "active" : ""}" data-urge-group="${group.id}">
+      <span class="family-icon">${esc(group.icon)}</span>
+      <strong>${esc(group.label)}</strong>
+      <small>${esc(group.fullLabel)}</small>
+    </button>
+  `).join("");
+  $("subOptionPanel").classList.remove("hidden");
+  $("subOptionChips").innerHTML = selected.group.options.map(option => `
+    <button type="button" class="chip ${option === quickLog.subOption ? "selected" : ""}" data-urge-sub="${esc(option)}">${esc(option)}</button>
+  `).join("");
+  $("intensityChips").innerHTML = INTENSITY_OPTIONS.map(option => `
+    <button type="button" class="choice-card ${option.value === quickLog.intensity ? "active" : ""}" data-intensity="${option.value}">${esc(option.label)}</button>
+  `).join("");
+  $("durationChips").innerHTML = DURATION_OPTIONS.map(option => `
+    <button type="button" class="choice-card ${option.value === quickLog.duration ? "active" : ""}" data-duration="${option.value}">${esc(option.label)}</button>
+  `).join("");
+  $$(".quick-action").forEach(btn => btn.classList.toggle("active", btn.dataset.quickAction === quickLog.action));
+  const smart = smartDefaultsFor(selected);
+  $("manualSource").placeholder = smart.source ? `Trigger: ${smart.source}` : "What sparked it?";
+  $("manualEmotion").placeholder = smart.emotion ? `Mood: ${smart.emotion}` : "Mood";
+  $("manualPlace").placeholder = smart.place ? `Location: ${smart.place}` : "Where?";
+  $("manualReplacement").placeholder = smart.replacement ? `Recovery: ${smart.replacement}` : "What helped?";
+}
+
+function selectQuickAction(action) {
+  quickLog.action = action;
+  renderQuickLog();
+}
+
+function selectQuickPick(category) {
+  const pick = urgeFromLabel(category);
+  quickLog.groupId = pick.group.id;
+  quickLog.subOption = pick.subOption;
+  renderQuickLog();
+}
+
+function selectUrgeGroup(groupId) {
+  const group = groupById(groupId);
+  quickLog.groupId = group.id;
+  quickLog.subOption = group.options[0] || "";
+  renderQuickLog();
+}
+
+function selectUrgeSub(subOption) {
+  quickLog.subOption = subOption;
+  renderQuickLog();
+}
+
+function selectIntensity(intensity) {
+  quickLog.intensity = intensity;
+  renderQuickLog();
+}
+
+function selectDuration(duration) {
+  quickLog.duration = duration;
+  renderQuickLog();
+}
+
+function togglePinnedUrge() {
+  const selected = selectedUrge();
+  state.settings.pinnedUrges ||= [];
+  if (state.settings.pinnedUrges.includes(selected.category)) {
+    state.settings.pinnedUrges = state.settings.pinnedUrges.filter(item => item !== selected.category);
+  } else {
+    state.settings.pinnedUrges.unshift(selected.category);
+    state.settings.pinnedUrges = state.settings.pinnedUrges.slice(0, 8);
+  }
+  saveState();
+}
+
+function selectedUrge() {
+  const group = groupById(quickLog.groupId);
+  const subOption = quickLog.subOption || group.options[0] || group.fullLabel;
+  return { group, subOption, category: subOption || group.fullLabel };
+}
+
+function groupById(groupId) {
+  return URGE_GROUPS.find(group => group.id === groupId) || URGE_GROUPS[0];
+}
+
+function urgeFromLabel(label) {
+  const normalized = String(label || "").toLowerCase();
+  const group = URGE_GROUPS.find(item =>
+    item.fullLabel.toLowerCase() === normalized ||
+    item.label.toLowerCase() === normalized ||
+    item.options.some(option => option.toLowerCase() === normalized)
+  ) || URGE_GROUPS.find(item => item.id === "other") || URGE_GROUPS[0];
+  const subOption = group.options.find(option => option.toLowerCase() === normalized) || label || group.options[0] || "";
+  return { group, subOption };
+}
+
+function quickPickItems() {
+  const pinned = (state.settings.pinnedUrges || []).map(category => ({ type: "Pinned", category }));
+  const recent = [];
+  state.sessions.forEach(session => {
+    const category = session.urgeSubcategory || session.category;
+    if (category && !recent.some(item => item.category === category)) recent.push({ type: "Recent", category });
+  });
+  const counts = countBy(state.sessions.map(session => ({ category: session.urgeSubcategory || session.category })), "category", true);
+  const mostUsed = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([category]) => ({ type: "Used", category }));
+  const merged = [...pinned, ...recent.slice(0, 5), ...mostUsed];
+  return merged.filter((item, index, list) => item.category && list.findIndex(other => other.category === item.category) === index).slice(0, 12);
+}
+
+function smartDefaultsFor(selected) {
+  const related = state.sessions.filter(session =>
+    session.urgeSubcategory === selected.category ||
+    session.category === selected.category ||
+    session.urgeGroup === selected.group.fullLabel
+  );
+  return {
+    source: topEntry(countBy(related, "source", true))?.[0] || selected.group.defaultSource,
+    replacement: topEntry(countBy(related.filter(session => session.outcome === "won"), "replacement", true))?.[0] || selected.group.defaultRecovery,
+    emotion: topEntry(countBy(related, "emotion", true))?.[0] || "",
+    place: topEntry(countBy(related, "place", true))?.[0] || ""
+  };
+}
+
+function durationOptionByValue(value) {
+  return DURATION_OPTIONS.find(option => option.value === value) || DURATION_OPTIONS[1];
 }
 
 function renderDashboard() {
@@ -642,10 +939,14 @@ function renderTrend(sessions) {
 }
 
 function renderCategoryAnalysis(sessions) {
-  const rows = state.settings.categories.map(cat => {
-    const items = sessions.filter(s => s.category === cat.name);
+  const categoryNames = [...new Set([
+    ...state.settings.categories.map(cat => cat.name),
+    ...sessions.map(session => session.category).filter(Boolean)
+  ])];
+  const rows = categoryNames.map(name => {
+    const items = sessions.filter(s => s.category === name);
     const wins = items.filter(s => s.outcome === "won").length;
-    return [cat.name, items.length, wins, pct(wins, items.length)];
+    return [name, items.length, wins, pct(wins, items.length)];
   }).filter(row => row[1] > 0).sort((a, b) => b[1] - a[1]);
   $("categoryBars").innerHTML = rows.length ? rows.map(([name, total, wins, rate]) => `
     <div class="bar-row"><span>${esc(name)}</span><div class="bar"><i style="width:${Math.round(wins / total * 100)}%"></i></div><strong>${rate}</strong></div>
@@ -891,7 +1192,12 @@ function applyTheme() {
 }
 
 function syncDynamicOptions() {
-  const catOptions = state.settings.categories.map(c => `<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+  const categoryNames = [...new Set([
+    ...state.settings.categories.map(c => c.name),
+    ...state.sessions.map(session => session.category).filter(Boolean),
+    ...URGE_GROUPS.flatMap(group => group.options)
+  ])];
+  const catOptions = categoryNames.map(name => `<option value="${esc(name)}">${esc(name)}</option>`).join("");
   ["preCategory", "manualCategory", "endCategory", "planCategory"].forEach(id => {
     const current = $(id).value;
     $(id).innerHTML = catOptions;
@@ -1088,6 +1394,8 @@ function renderSessionList(items, deletable) {
       <div class="entry-meta">
         <span>${esc(formatDualDateTime(s.startTime, true))}</span>
         <span>${formatDuration(s.durationSeconds || 0)}</span>
+        ${s.urgeGroup ? `<span>${esc(s.urgeGroup)}</span>` : ""}
+        ${s.intensity ? `<span>${esc(title(s.intensity))}</span>` : ""}
         ${s.place ? `<span>${esc(s.place)}</span>` : ""}
         ${s.emotion ? `<span>${esc(s.emotion)}</span>` : ""}
         ${s.source ? `<span>${esc(s.source)}</span>` : ""}
@@ -1224,6 +1532,7 @@ function datalist(id, values) {
 }
 
 function getSelectedStartCategory() {
+  if ($("urgeGroupGrid")) return selectedUrge().category;
   return $("preCategory").value || state.settings.categories[0]?.name || "Other";
 }
 
@@ -1487,7 +1796,7 @@ function download(filename, content, type) {
 }
 
 function sessionsToCsv() {
-  const headers = ["startTime", "endTime", "outcome", "category", "durationSeconds", "place", "emotion", "source", "replacement", "recoveryMinutes", "notes"];
+  const headers = ["startTime", "endTime", "outcome", "category", "urgeGroup", "urgeSubcategory", "intensity", "durationBucket", "durationSeconds", "place", "emotion", "source", "replacement", "recoveryMinutes", "notes"];
   const rows = state.sessions.map(s => headers.map(h => `"${String(s[h] ?? "").replaceAll('"', '""')}"`).join(","));
   return [headers.join(","), ...rows].join("\n");
 }

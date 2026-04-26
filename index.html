@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260424-account-sync-1">
+  <link rel="stylesheet" href="styles.css?v=20260426-quick-urge-1">
   <title>Urge Lab - Impulse Control Tracker</title>
 </head>
 <body>
@@ -142,53 +142,98 @@
       </section>
 
       <section id="battle" class="view">
-        <section class="card">
-          <h2>Fast impulse log</h2>
-          <p class="subtle">Required: start and outcome only. Context is optional and fast.</p>
-          <div class="grid-2">
-            <label class="field">Category
-              <select id="preCategory"></select>
-            </label>
-            <label class="field">Optional custom category
-              <input id="preCustomCategory" placeholder="Custom category">
-            </label>
+        <section class="card quick-log-card">
+          <div class="section-head compact-head">
+            <div>
+              <p class="eyebrow">2-second log</p>
+              <h2>What happened?</h2>
+            </div>
+            <span id="quickModePill" class="status-pill">Simple</span>
           </div>
-          <button id="startImpulseLog" class="full-primary">Impulse Started</button>
-        </section>
 
-        <section class="card">
-          <h2>Manual quick entry</h2>
-          <p class="subtle">Use this if the episode already happened.</p>
-          <form id="manualForm" class="form-grid">
-            <div class="grid-3">
-              <label class="field">Outcome
-                <select id="manualOutcome"><option value="won">Won</option><option value="defeated">Defeated</option></select>
-              </label>
-              <label class="field">Category
-                <select id="manualCategory"></select>
-              </label>
-              <label class="field">Duration minutes
-                <input id="manualDuration" type="number" min="0" step="1" value="5">
-              </label>
+          <div class="quick-action-grid" aria-label="Quick outcome">
+            <button class="quick-action active" data-quick-action="urge">
+              <span class="action-icon">!</span>
+              <strong>Urge</strong>
+              <small>Start timer</small>
+            </button>
+            <button class="quick-action" data-quick-action="won">
+              <span class="action-icon">OK</span>
+              <strong>Win</strong>
+              <small>Resisted</small>
+            </button>
+            <button class="quick-action danger" data-quick-action="defeated">
+              <span class="action-icon">X</span>
+              <strong>Slip</strong>
+              <small>Gave in</small>
+            </button>
+          </div>
+
+          <div class="quick-block">
+            <div class="mini-head">
+              <strong>Quick picks</strong>
+              <span id="quickPickHint" class="subtle">Recent, common, and pinned</span>
             </div>
-            <div class="grid-3">
-              <label class="field">Place
-                <input id="manualPlace" list="placeOptions" placeholder="bed, office...">
-              </label>
-              <label class="field">Emotion
-                <input id="manualEmotion" list="emotionOptions" placeholder="bored, stressed...">
-              </label>
-              <label class="field">Trigger source
-                <input id="manualSource" list="sourceOptions" placeholder="YouTube, memory...">
-              </label>
+            <div id="quickPickChips" class="quick-pick-row"></div>
+          </div>
+
+          <div class="quick-block">
+            <div class="mini-head">
+              <strong>Urge family</strong>
+              <span id="selectedUrgeLabel" class="subtle">Not sure is valid</span>
+              <button id="togglePinnedUrge" class="link-btn hidden" type="button">Pin</button>
             </div>
-            <label class="field">Replacement action
-              <input id="manualReplacement" list="replacementOptions" placeholder="walk, breathing, no replacement...">
-            </label>
-            <label class="field">Optional notes
-              <textarea id="manualNotes" placeholder="Short lesson or context."></textarea>
-            </label>
-            <button class="solid-btn" type="submit">Save manual entry</button>
+            <div id="urgeGroupGrid" class="urge-family-grid"></div>
+          </div>
+
+          <div id="subOptionPanel" class="quick-block hidden">
+            <div class="mini-head">
+              <strong>Sub-option</strong>
+              <button id="clearSubOption" class="link-btn" type="button">Clear</button>
+            </div>
+            <div id="subOptionChips" class="chip-row"></div>
+          </div>
+
+          <form id="manualForm" class="form-grid quick-form">
+            <input id="manualOutcome" type="hidden" value="won">
+            <select id="preCategory" class="sr-only" aria-hidden="true"></select>
+            <input id="preCustomCategory" class="sr-only" aria-hidden="true" tabindex="-1">
+            <select id="manualCategory" class="sr-only" aria-hidden="true"></select>
+            <input id="manualDuration" class="sr-only" aria-hidden="true" tabindex="-1" value="5">
+
+            <div class="quick-block simple-grid">
+              <div>
+                <div class="mini-head"><strong>Intensity</strong></div>
+                <div id="intensityChips" class="choice-grid four"></div>
+              </div>
+              <div>
+                <div class="mini-head"><strong>Duration</strong></div>
+                <div id="durationChips" class="choice-grid"></div>
+              </div>
+            </div>
+
+            <details id="detailMode" class="detail-drawer">
+              <summary>Add details</summary>
+              <div class="grid-2 detail-grid">
+                <label class="field">Trigger
+                  <input id="manualSource" list="sourceOptions" placeholder="What sparked it?">
+                </label>
+                <label class="field">Mood
+                  <input id="manualEmotion" list="emotionOptions" placeholder="Mood">
+                </label>
+                <label class="field">Location
+                  <input id="manualPlace" list="placeOptions" placeholder="Where?">
+                </label>
+                <label class="field">Recovery step
+                  <input id="manualReplacement" list="replacementOptions" placeholder="What helped?">
+                </label>
+              </div>
+              <label class="field">Note
+                <textarea id="manualNotes" placeholder="Optional note"></textarea>
+              </label>
+            </details>
+
+            <button id="quickSaveBtn" class="full-primary" type="submit">Start urge timer</button>
           </form>
         </section>
       </section>
@@ -467,6 +512,6 @@
   </div>
 
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <script src="app.js?v=20260424-account-sync-1"></script>
+  <script src="app.js?v=20260426-quick-urge-1"></script>
 </body>
 </html>

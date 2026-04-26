@@ -32,6 +32,8 @@ Recently fixed:
 - Signed-in users now save to account-specific local keys and can sync to `/.netlify/functions/account-state`.
 - `package.json` was added with `@netlify/blobs`, and `netlify/functions/account-state.js` was added for per-user cloud state.
 - Asset versions were bumped again: `styles.css?v=20260424-account-sync-1`, `app.js?v=20260424-account-sync-1`, `APP_VERSION = 2026-04-24-account-sync-1`, `CACHE_NAME = urge-lab-complete-v8-account-sync`.
+- Log tab was redesigned for low-cognitive-load urge logging. It now uses large `Urge`, `Win`, and `Slip` actions, quick picks, visual urge-family cards, contextual sub-options, simple intensity/duration chips, optional details, and pin/unpin support.
+- Asset versions were bumped for the quick urge picker: `styles.css?v=20260426-quick-urge-1`, `app.js?v=20260426-quick-urge-1`, `APP_VERSION = 2026-04-26-quick-urge-1`, `CACHE_NAME = urge-lab-complete-v9-quick-urge`.
 - Old duplicate local app folder `urge tracker pwa` was synced with the current root app files, but that folder is ignored by Git.
 - `urge-lab-impulse-control-tracker.zip` was rebuilt locally, but it is ignored by Git.
 
@@ -61,7 +63,7 @@ Must be tested manually:
 
 Screens/pages:
 - Dashboard: active battle card, daily check-in, metrics, won/defeated time comparison, today pattern, recent sessions.
-- Log: fast impulse log and manual quick entry.
+- Log: 2-second quick logger with Urge/Win/Slip actions, quick picks, visual urge families, contextual sub-options, simple intensity/duration selectors, and optional detail drawer.
 - History: category/outcome/date filtering and deletable session list.
 - Analytics: daily/weekly/monthly/yearly range summaries, trend bars, high-risk hour, category analysis, top places/emotions/sources, replacement effectiveness, pattern insights.
 - Focus: protected focus window, friction mode shortcuts, risk reminders.
@@ -73,7 +75,7 @@ Buttons and actions:
 - Header: `Account`, `Install app`.
 - Hero/Dashboard: `Impulse Started`, rescue action buttons `Breathe 4-6`, `Drink water`, `Walk`, `Change room`, `Won`, `Defeated`, `Cancel mistaken start`, reason chips, `Save reason`.
 - Tabs: `Dashboard`, `Log`, `History`, `Analytics`, `Focus`, `Reflect`, `Settings`.
-- Log: `Impulse Started`, `Save manual entry`.
+- Log: `Urge`, `Win`, `Slip`, quick-pick pills, urge-family cards, sub-option chips, `Pin`/`Unpin`, intensity chips, duration chips, `Add details`, `Start urge timer`, `Save win`, `Save slip`.
 - History: `Clear all`, per-session `Delete`.
 - Analytics: `Daily`, `Weekly`, `Monthly`, `Yearly`.
 - Focus: `15 min`, `30 min`, `60 min`, `Start custom`, target-site shortcut buttons, `Add gate`, `Enable notifications`, `Add reminder`, per-reminder `Delete`, `Complete focus window`, `Cancel focus window`.
@@ -84,8 +86,8 @@ Buttons and actions:
 
 Forms, inputs, dropdowns:
 - Daily check-in: `customPledge`.
-- Fast impulse log: `preCategory` select, `preCustomCategory` input.
-- Manual entry: `manualOutcome`, `manualCategory`, `manualDuration`, `manualPlace`, `manualEmotion`, `manualSource`, `manualReplacement`, `manualNotes`.
+- Quick logger: hidden compatibility fields `preCategory`, `preCustomCategory`, `manualOutcome`, `manualCategory`, `manualDuration`; visual controls `quickAction`, `quickPickChips`, `urgeGroupGrid`, `subOptionChips`, `intensityChips`, `durationChips`.
+- Optional quick-log details: `manualPlace`, `manualEmotion`, `manualSource`, `manualReplacement`, `manualNotes`.
 - History filters: `filterCategory`, `filterOutcome`, `filterFrom`, `filterTo`.
 - Focus custom: `customFocus`.
 - Site gate: `customSiteName`, `customSiteUrl`.
@@ -119,12 +121,13 @@ localStorage keys and data structures:
   - `frictionLogs`: array of gate events containing site, action `cancelled` or `continued`, why text, timestamps.
   - `settings`: object merged with `defaults`.
 - Session shape:
-  - `{ id, startTime, endTime, outcome, category, durationSeconds, place, emotion, source, replacement, recoveryMinutes, notes }`.
+  - `{ id, startTime, endTime, outcome, category, urgeGroup, urgeSubcategory, intensity, durationBucket, durationSeconds, place, emotion, source, replacement, recoveryMinutes, notes }`.
 - Settings shape:
   - `categories`: array of `{ name, usualMinutes }`.
   - `places`, `emotions`, `sources`, `replacements`, `reasons`: string arrays.
   - `rescuePlans`: array of `{ category, ifText, thenText }`.
   - `targetSites`: array of `{ name, url }`.
+  - `pinnedUrges`: string array of pinned quick-pick urge labels.
   - `reminders`: array of `{ id, hour, day, label }`.
   - `theme`: `"light"` or `"dark"`.
 
@@ -153,28 +156,29 @@ Print/PDF/report:
 - Purpose: Static app shell, metadata, PWA links, all screen markup, modals, datalists, script/style references.
 - Main sections: header hero, tabs, `dashboard`, `battle`, `history`, `analytics`, `focus`, `reflection`, `settings`, `endModal`, `frictionModal`.
 - Important IDs: all buttons/forms listed in section C.
-- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; asset query strings updated to `account-sync-1`.
+- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; Log tab replaced with quick urge picker; asset query strings updated to `quick-urge-1`.
 
 `styles.css`
 - Purpose: Responsive app styling, CSS variables, light/dark themes, cards, metrics, bars, modals, sticky/fixed mobile tabs.
 - Important variables: `--ink`, `--muted`, `--paper`, `--panel`, `--line`, `--navy`, `--blue`, `--teal`, `--green`, `--amber`, `--red`, `--shadow`, `--radius`.
 - Main layout classes: `.app-shell`, `.hero`, `.tabs`, `.view`, `.card`, `.battle-card`, `.metric-grid`, `.split`, `.grid-2`, `.grid-3`, `.grid-4`, `.modal`, `.sheet`.
-- Recent edits: added account button, account status pill, and account facts styling.
+- Recent edits: added account button, account status pill, account facts styling, and quick-logger card/grid/chip styling.
 
 `app.js`
 - Purpose: Full client app logic, data model, calculations, rendering, event binding, backup/import/export, reminders, focus/friction, account login hooks, per-user local caches, and sync calls.
-- Important constants/variables: `STORE_KEY`, `ACCOUNT_STORE_PREFIX`, `SYNC_ENDPOINT`, `APP_VERSION`, `defaults`, `currentStoreKey`, `currentUser`, `state`, `activeBattle`, `battleTimer`, `activeFocus`, `focusTimer`, `friction`, `frictionTimer`, `deferredPrompt`, `analyticsRange`, `reminderTimers`, `syncTimer`, `syncInFlight`, `syncStatus`.
+- Important constants/variables: `STORE_KEY`, `ACCOUNT_STORE_PREFIX`, `SYNC_ENDPOINT`, `APP_VERSION`, `defaults`, `URGE_GROUPS`, `INTENSITY_OPTIONS`, `DURATION_OPTIONS`, `currentStoreKey`, `currentUser`, `state`, `quickLog`, `activeBattle`, `pendingBattleContext`, `battleTimer`, `activeFocus`, `focusTimer`, `friction`, `frictionTimer`, `deferredPrompt`, `analyticsRange`, `reminderTimers`, `syncTimer`, `syncInFlight`, `syncStatus`.
 - Main functions:
   - Lifecycle/PWA/Auth: `init`, `registerServiceWorker`, `bindEvents`, `initIdentity`, `applyAccount`, `openAccountModal`, `logoutAccount`.
   - State: `blankState`, `normalizeState`, `readStoredBundle`, `loadState`, `writeStoredBundle`, `saveState`.
   - Navigation: `showView`.
+  - Quick logger: `ensureQuickLogDefaults`, `renderQuickLog`, `selectQuickAction`, `selectQuickPick`, `selectUrgeGroup`, `selectUrgeSub`, `selectIntensity`, `selectDuration`, `togglePinnedUrge`, `selectedUrge`, `urgeFromLabel`, `quickPickItems`, `smartDefaultsFor`, `durationOptionByValue`.
   - Battles: `startBattle`, `tickBattle`, `endBattle`, `cancelBattle`, `saveEndedBattle`, `saveManual`, `deleteSession`, `clearAll`.
   - Rendering: `render`, `renderAccountUi`, `renderDashboard`, `renderTodayPattern`, `renderHistory`, `renderAnalytics`, `renderCurrentDate`, `renderRangeSummary`, `renderTrend`, `renderCategoryAnalysis`, `renderReplacementEffectiveness`, `renderInsights`, `renderFocus`, `renderReflections`, `renderSettings`, `renderPledge`, `renderSessionList`, `renderBars`, `renderChips`.
   - Sync: `scheduleRemoteSync`, `syncAccountState`, `fetchAccountState`, `pushAccountState`, `currentJwt`, `isNewer`.
   - Focus/friction/reminders: `startFocus`, `tickFocus`, `closeFocus`, `addSite`, `openFriction`, `cancelFriction`, `continueFriction`, `enableNotifications`, `addReminder`, `deleteReminderById`, `scheduleReminders`, `fireReminder`, `nextReminderDelay`.
   - Settings: `syncSettingsUi`, `applyTheme`, `syncDynamicOptions`, `savePledge`, `saveCustomPledge`, `todaysPledge`, `saveCategoryEdit`, `addCategory`, `addPlan`, `deletePlanByIndex`, `saveLists`, `saveTheme`.
   - Calculations/helpers: `savedSeconds`, `todayScore`, `recoveryScore`, `currentNoDefeatStreak`, `bestNoDefeatStreak`, `groupSessions`, `trendRow`, `summaryTile`, `countBy`, `hourCounts`, `bestReplacement`, `topEntry`, `parseList`, `nonNegative`, `sum`, `average`, `pct`, date/BS helpers, `normalizeUrl`, `download`, `sessionsToCsv`, `importJson`, `toast`.
-- Recent edits: account sync logic added; `APP_VERSION` bumped to `2026-04-24-account-sync-1`; service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
+- Recent edits: account sync logic added; quick urge picker added; `APP_VERSION` bumped to `2026-04-26-quick-urge-1`; service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
 
 `netlify/functions/account-state.js`
 - Purpose: Authenticated Netlify Function for reading/writing a signed-in user's app state.
@@ -187,9 +191,9 @@ Print/PDF/report:
 
 `service-worker.js`
 - Purpose: Offline cache and update behavior.
-- Important constants: `CACHE_NAME = "urge-lab-complete-v8-account-sync"`, `ASSETS`.
+- Important constants: `CACHE_NAME = "urge-lab-complete-v9-quick-urge"`, `ASSETS`.
 - Main handlers: `message`, `install`, `activate`, `fetch`.
-- Recent edits: cache version bumped to v8 and asset query strings updated to `account-sync-1`.
+- Recent edits: cache version bumped to v9 and asset query strings updated to `quick-urge-1`.
 
 `manifest.json`
 - Purpose: PWA install metadata.

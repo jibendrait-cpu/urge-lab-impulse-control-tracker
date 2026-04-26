@@ -2,7 +2,8 @@ Urge Lab - Complete Impulse-Control Tracker
 
 Feature blueprint:
 - Core flow: one-tap "Impulse Started", live active-battle timer, start timestamp, rescue actions, cancel-with-confirmation, and one-tap Won/Defeated close.
-- Fast context: optional place, emotion, trigger source, replacement action, recovery minutes, and notes using chips plus custom inputs.
+- Quick log: large Urge / Win / Slip actions, pinned/recent/common urge picks, visual urge-family cards, contextual sub-options, intensity chips, duration chips, and optional details.
+- Fast context: optional place, mood, trigger source, replacement action, recovery minutes, and notes using chips plus custom inputs.
 - Prevention setup: target impulse categories, usual lost time per category, if-then rescue plans, daily pledge/reason reminder, editable quick-select lists.
 - Dashboard: total urges, won urges, defeated urges, win rate, total won time, defeated time, longest resisted urge, saved time estimate, current streak, best streak, recovery score, and today's battle score.
 - Saved time formula: for each won urge, max(category usual lost minutes - actual urge duration, 0). This is shown in Settings and Dashboard.
@@ -13,7 +14,7 @@ Feature blueprint:
 - Focus layer: protected focus windows, in-app lock screen, countdown, completion logging, and friction-gated target-site shortcuts.
 - Reminders: risky-hour reminder setup using browser notifications when permission is granted, plus in-app toast fallback.
 - Reflection: three optional end-of-day prompts only.
-- Data: localStorage persistence, JSON backup/import, CSV export.
+- Data: localStorage persistence, urge group/subcategory/intensity fields, JSON backup/import, CSV export.
 - Accounts: optional Netlify Identity login/signup so each signed-in user gets a separate local cache and cloud-backed state.
 - PWA: installable manifest, offline service worker, Netlify static deploy config.
 

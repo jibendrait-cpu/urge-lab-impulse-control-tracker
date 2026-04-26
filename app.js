@@ -1,7 +1,7 @@
 const STORE_KEY = "urge-lab-complete-v1";
 const ACCOUNT_STORE_PREFIX = `${STORE_KEY}:account:`;
 const SYNC_ENDPOINT = "/.netlify/functions/account-state";
-const APP_VERSION = "2026-04-26-live-server-1";
+const APP_VERSION = "2026-04-26-micro-kpi-1";
 
 const defaults = {
   categories: [

@@ -43,6 +43,8 @@ Recently fixed:
 - Asset versions were bumped for the dev-cache fix: `styles.css?v=20260426-dev-cache-1`, `app.js?v=20260426-dev-cache-1`, `APP_VERSION = 2026-04-26-dev-cache-1`, `CACHE_NAME = urge-lab-complete-v12-dev-cache`.
 - Live Server fix was hardened with an inline local-dev cleanup script in `index.html`, a local-only visible `DEV VERSION TEST 001` marker, and removal of stale generated `.netlify/deploy-850c4ea` files that referenced `20260424-dark-theme-3`.
 - Asset versions were bumped for the Live Server marker fix: `styles.css?v=20260426-live-server-1`, `app.js?v=20260426-live-server-1`, `APP_VERSION = 2026-04-26-live-server-1`, `CACHE_NAME = urge-lab-complete-v13-live-server`.
+- Dashboard KPI cards were redesigned into a compact micro-dashboard: smaller cards, tighter grid, reduced typography scale, denser mobile layout, and dark-mode-safe compact metric styling. No KPI IDs or values were removed.
+- Asset versions were bumped for the micro KPI update: `styles.css?v=20260426-micro-kpi-1`, `app.js?v=20260426-micro-kpi-1`, `APP_VERSION = 2026-04-26-micro-kpi-1`, `CACHE_NAME = urge-lab-complete-v14-micro-kpi`.
 - Production verification after deploy: `https://dreamy-concha-1b8a32.netlify.app/index.html` returned `app.js?v=20260426-quick-urge-1` and contained `quick-action-grid`.
 - Latest manual production deploy unique URL: `https://69edd2f5933e0d5c21b64ab3--dreamy-concha-1b8a32.netlify.app`.
 - Old duplicate local app folder `urge tracker pwa` was synced with the current root app files, but that folder is ignored by Git.
@@ -115,7 +117,7 @@ Forms, inputs, dropdowns:
 - Datalists: `placeOptions`, `emotionOptions`, `sourceOptions`, `replacementOptions`.
 
 Dashboard/report/chart elements:
-- Metrics: total urges, won urges, defeated urges, win rate, total won time, defeated time, average defeated duration, quick-collapse count, longest resisted, saved estimate, current streak, best streak, recovery score, today's battle score.
+- Metrics: compact micro-dashboard cards for total urges, won urges, defeated urges, win rate, total won time, defeated time, average defeated duration, quick-collapse count, longest resisted, saved estimate, current streak, best streak, recovery score, today's battle score.
 - Bars/charts are DOM/CSS bars, not canvas/SVG charts.
 - Reports are screen-based only right now; there is no dedicated print/PDF report button or print stylesheet.
 
@@ -167,13 +169,13 @@ Print/PDF/report:
 - Purpose: Static app shell, metadata, PWA links, all screen markup, modals, datalists, script/style references.
 - Main sections: header hero, tabs, `dashboard`, `battle`, `history`, `analytics`, `focus`, `reflection`, `settings`, `endModal`, `frictionModal`.
 - Important IDs: all buttons/forms listed in section C.
-- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; Log tab replaced with quick urge picker; Daily Check-In reason picker modal added; mobile header compacted; inline local-dev cache cleanup and marker added; asset query strings updated to `live-server-1`.
+- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; Log tab replaced with quick urge picker; Daily Check-In reason picker modal added; mobile header compacted; inline local-dev cache cleanup and marker added; asset query strings updated to `micro-kpi-1`.
 
 `styles.css`
 - Purpose: Responsive app styling, CSS variables, light/dark themes, cards, metrics, bars, modals, sticky/fixed mobile tabs.
 - Important variables: `--ink`, `--muted`, `--paper`, `--panel`, `--line`, `--navy`, `--blue`, `--teal`, `--green`, `--amber`, `--red`, `--shadow`, `--radius`.
 - Main layout classes: `.app-shell`, `.hero`, `.tabs`, `.view`, `.card`, `.battle-card`, `.metric-grid`, `.split`, `.grid-2`, `.grid-3`, `.grid-4`, `.modal`, `.sheet`.
-- Recent edits: added account button, account status pill, account facts styling, quick-logger card/grid/chip styling, compact Daily Check-In picker styling, mobile-only compact hero/header styles, and local-dev marker styling.
+- Recent edits: added account button, account status pill, account facts styling, quick-logger card/grid/chip styling, compact Daily Check-In picker styling, mobile-only compact hero/header styles, local-dev marker styling, and compact KPI micro-dashboard styling.
 
 `app.js`
 - Purpose: Full client app logic, data model, calculations, rendering, event binding, backup/import/export, reminders, focus/friction, account login hooks, per-user local caches, and sync calls.
@@ -189,7 +191,7 @@ Print/PDF/report:
   - Focus/friction/reminders: `startFocus`, `tickFocus`, `closeFocus`, `addSite`, `openFriction`, `cancelFriction`, `continueFriction`, `enableNotifications`, `addReminder`, `deleteReminderById`, `scheduleReminders`, `fireReminder`, `nextReminderDelay`.
   - Settings: `syncSettingsUi`, `applyTheme`, `syncDynamicOptions`, `openPledgePicker`, `closePledgePicker`, `savePledge`, `saveCustomPledge`, `todaysPledge`, `saveCategoryEdit`, `addCategory`, `addPlan`, `deletePlanByIndex`, `saveLists`, `saveTheme`.
   - Calculations/helpers: `savedSeconds`, `todayScore`, `recoveryScore`, `currentNoDefeatStreak`, `bestNoDefeatStreak`, `groupSessions`, `trendRow`, `summaryTile`, `countBy`, `hourCounts`, `bestReplacement`, `topEntry`, `parseList`, `nonNegative`, `sum`, `average`, `pct`, date/BS helpers, `normalizeUrl`, `download`, `sessionsToCsv`, `importJson`, `toast`.
-- Recent edits: account sync logic added; quick urge picker added; Daily Check-In pledge picker added; local development now unregisters service workers and clears app caches; `APP_VERSION` bumped to `2026-04-26-live-server-1`; production service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
+- Recent edits: account sync logic added; quick urge picker added; Daily Check-In pledge picker added; local development now unregisters service workers and clears app caches; `APP_VERSION` bumped to `2026-04-26-micro-kpi-1`; production service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
 
 `netlify/functions/account-state.js`
 - Purpose: Authenticated Netlify Function for reading/writing a signed-in user's app state.
@@ -206,9 +208,9 @@ Print/PDF/report:
 
 `service-worker.js`
 - Purpose: Offline cache and update behavior.
-- Important constants: `CACHE_NAME = "urge-lab-complete-v13-live-server"`, `ASSETS`, `DEV_HOSTS`, `IS_DEV_HOST`.
+- Important constants: `CACHE_NAME = "urge-lab-complete-v14-micro-kpi"`, `ASSETS`, `DEV_HOSTS`, `IS_DEV_HOST`.
 - Main handlers: `message`, `install`, `activate`, `fetch`.
-- Recent edits: cache version bumped to v13, asset query strings updated to `live-server-1`, and local dev hosts bypass fetch caching.
+- Recent edits: cache version bumped to v14, asset query strings updated to `micro-kpi-1`, and local dev hosts bypass fetch caching.
 
 `.vscode/settings.json`
 - Purpose: VS Code Live Server local-preview guardrails.

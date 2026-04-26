@@ -175,17 +175,49 @@ main, .view, .form-grid, .entry-list, .settings-list, .bar-list, .compare { disp
 .subtle { margin: 0; color: var(--muted); line-height: 1.45; }
 .battle-card .subtle { color: rgba(255,248,234,0.72); }
 
-.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-.metric { min-height: 112px; padding: 18px; border-radius: 24px; background: var(--paper); border: 1px solid var(--line); }
-.metric small { color: var(--muted); font-weight: 1000; text-transform: uppercase; letter-spacing: 0.08em; }
-.metric strong { display: block; margin-top: 12px; font-size: clamp(1.85rem, 5vw, 3.1rem); letter-spacing: -0.075em; line-height: 0.9; }
-.metric.accent { background: rgba(42,157,143,0.16); }
-.metric.warn { background: rgba(196,69,85,0.13); }
-.metric.score { background: rgba(246,170,28,0.22); }
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 9px;
+}
+.metric {
+  min-height: 76px;
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,248,234,0.82);
+  box-shadow: 0 8px 20px rgba(18,33,59,0.055);
+}
+.metric small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 1000;
+  letter-spacing: 0.06em;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+.metric strong {
+  display: block;
+  overflow: hidden;
+  font-size: clamp(1.1rem, 2.1vw, 1.65rem);
+  font-weight: 1000;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.metric.accent { background: linear-gradient(135deg, rgba(42,157,143,0.18), rgba(255,248,234,0.86)); }
+.metric.warn { background: linear-gradient(135deg, rgba(196,69,85,0.14), rgba(255,248,234,0.86)); }
+.metric.score { background: linear-gradient(135deg, rgba(246,170,28,0.24), rgba(255,248,234,0.88)); }
 
-:root[data-theme="dark"] .metric.accent { background: rgba(42,157,143,0.18); }
-:root[data-theme="dark"] .metric.warn { background: rgba(255,107,122,0.12); }
-:root[data-theme="dark"] .metric.score { background: rgba(255,188,66,0.18); }
+:root[data-theme="dark"] .metric { background: rgba(17, 26, 40, 0.9); }
+:root[data-theme="dark"] .metric.accent { background: linear-gradient(135deg, rgba(42,157,143,0.2), rgba(17,26,40,0.92)); }
+:root[data-theme="dark"] .metric.warn { background: linear-gradient(135deg, rgba(255,107,122,0.15), rgba(17,26,40,0.92)); }
+:root[data-theme="dark"] .metric.score { background: linear-gradient(135deg, rgba(255,188,66,0.22), rgba(17,26,40,0.92)); }
 
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
@@ -620,7 +652,8 @@ main, .view, .form-grid, .entry-list, .settings-list, .bar-list, .compare { disp
 
 @media (max-width: 920px) {
   .hero-grid, .split, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-  .metric-grid, .range-summary { grid-template-columns: repeat(2, 1fr); }
+  .metric-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .range-summary { grid-template-columns: repeat(2, 1fr); }
   .shortcut-grid, .quick-pick-row { grid-template-columns: repeat(2, 1fr); }
   .urge-family-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .compact-field-head, .custom-picker { grid-template-columns: 1fr; }
@@ -734,7 +767,26 @@ main, .view, .form-grid, .entry-list, .settings-list, .bar-list, .compare { disp
     line-height: 1.2;
     text-align: left;
   }
-  .metric-grid, .range-summary, .shortcut-grid, .battle-actions { grid-template-columns: 1fr; }
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .metric {
+    min-height: 58px;
+    gap: 5px;
+    padding: 8px 9px;
+    border-radius: 11px;
+    box-shadow: none;
+  }
+  .metric small {
+    font-size: 0.56rem;
+    letter-spacing: 0.045em;
+  }
+  .metric strong {
+    font-size: clamp(1rem, 6vw, 1.32rem);
+    letter-spacing: -0.035em;
+  }
+  .range-summary, .shortcut-grid, .battle-actions { grid-template-columns: 1fr; }
   .quick-action-grid { grid-template-columns: 1fr; }
   .urge-family-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .choice-grid, .choice-grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -742,4 +794,9 @@ main, .view, .form-grid, .entry-list, .settings-list, .bar-list, .compare { disp
   .bar-row { grid-template-columns: 82px 1fr 40px; font-size: 0.84rem; }
   .trend-row { grid-template-columns: 1fr; }
   .inline-form, .toolbar, .modal-actions { align-items: stretch; flex-direction: column; }
+}
+
+@media (min-width: 390px) and (max-width: 520px) {
+  .metric-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .metric { min-height: 62px; }
 }

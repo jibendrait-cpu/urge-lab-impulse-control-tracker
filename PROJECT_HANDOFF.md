@@ -22,6 +22,7 @@ Already working:
 - Signed-in accounts can keep a per-user cloud copy through Netlify Identity plus a Netlify Function backed by Netlify Blobs.
 - PWA manifest, install prompt, icons, offline service worker, and Netlify static deployment are present.
 - Netlify production was manually deployed and verified live after the PWA cache fix.
+- Netlify production was manually deployed again on 2026-04-26 and verified serving the quick urge picker.
 
 Recently fixed:
 - Browser/PWA cache update issue. `index.html` now references `styles.css?v=20260424-dark-theme-3` and `app.js?v=20260424-dark-theme-3`.
@@ -34,6 +35,8 @@ Recently fixed:
 - Asset versions were bumped again: `styles.css?v=20260424-account-sync-1`, `app.js?v=20260424-account-sync-1`, `APP_VERSION = 2026-04-24-account-sync-1`, `CACHE_NAME = urge-lab-complete-v8-account-sync`.
 - Log tab was redesigned for low-cognitive-load urge logging. It now uses large `Urge`, `Win`, and `Slip` actions, quick picks, visual urge-family cards, contextual sub-options, simple intensity/duration chips, optional details, and pin/unpin support.
 - Asset versions were bumped for the quick urge picker: `styles.css?v=20260426-quick-urge-1`, `app.js?v=20260426-quick-urge-1`, `APP_VERSION = 2026-04-26-quick-urge-1`, `CACHE_NAME = urge-lab-complete-v9-quick-urge`.
+- Production verification after deploy: `https://dreamy-concha-1b8a32.netlify.app/index.html` returned `app.js?v=20260426-quick-urge-1` and contained `quick-action-grid`.
+- Latest manual production deploy unique URL: `https://69edd2f5933e0d5c21b64ab3--dreamy-concha-1b8a32.netlify.app`.
 - Old duplicate local app folder `urge tracker pwa` was synced with the current root app files, but that folder is ignored by Git.
 - `urge-lab-impulse-control-tracker.zip` was rebuilt locally, but it is ignored by Git.
 
@@ -189,6 +192,10 @@ Print/PDF/report:
 - Purpose: tracks runtime dependency for Netlify Blobs and provides a repo check script.
 - Important values: dependency `@netlify/blobs`, script `npm run check`.
 
+`package-lock.json`
+- Purpose: locks Netlify Function dependency versions for reproducible install/deploy.
+- Recent edits: created by `npm install` after account sync dependency was added.
+
 `service-worker.js`
 - Purpose: Offline cache and update behavior.
 - Important constants: `CACHE_NAME = "urge-lab-complete-v9-quick-urge"`, `ASSETS`.
@@ -287,11 +294,11 @@ Account logic:
 ## F. Deployment Status
 
 - Production URL: https://dreamy-concha-1b8a32.netlify.app
-- Unique deploy URL from last manual production deploy: `https://69eaebc8c2d6326a0d57db83--dreamy-concha-1b8a32.netlify.app`
+- Unique deploy URL from last manual production deploy: `https://69edd2f5933e0d5c21b64ab3--dreamy-concha-1b8a32.netlify.app`
 - Netlify build/deploy method: static deploy from project root, `publish = "."`.
 - Netlify account sync prerequisites: enable Identity in the site dashboard before testing signup/login in production.
-- Manual deploy used: clean `git archive` extracted into `.netlify/deploy-850c4ea`, then `npx --yes netlify-cli deploy --prod --dir .netlify\deploy-850c4ea`.
-- GitHub push status before handoff file: `main` synced with `origin/main` at `850c4ea`.
+- Manual deploy used most recently: `npx --yes netlify-cli deploy --prod --dir .`.
+- GitHub push status before handoff file: `main` pushed through `deb44e1` before the handoff update commit.
 - Cache/service-worker issue: fixed by query-string bumps, cache name bump, no-cache headers, `skipWaiting`, `clients.claim`, and `updateViaCache: "none"`.
 
 Exact redeploy steps:

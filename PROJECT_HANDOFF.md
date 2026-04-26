@@ -41,7 +41,7 @@ Recently fixed:
 - Asset versions were bumped for the mobile header update: `styles.css?v=20260426-mobile-header-1`, `app.js?v=20260426-mobile-header-1`, `APP_VERSION = 2026-04-26-mobile-header-1`, `CACHE_NAME = urge-lab-complete-v11-mobile-header`.
 - Live Server stale preview issue was fixed by disabling/unregistering the app service worker on localhost/file previews, clearing only `urge-lab*` caches in local development, adding a dev-host no-cache guard in `service-worker.js`, and adding `.vscode/settings.json` so Live Server uses the project root while ignoring stale generated folders.
 - Asset versions were bumped for the dev-cache fix: `styles.css?v=20260426-dev-cache-1`, `app.js?v=20260426-dev-cache-1`, `APP_VERSION = 2026-04-26-dev-cache-1`, `CACHE_NAME = urge-lab-complete-v12-dev-cache`.
-- Live Server fix was hardened with an inline local-dev cleanup script in `index.html`, a local-only visible `DEV VERSION TEST 001` marker, and removal of stale generated `.netlify/deploy-850c4ea` files that referenced `20260424-dark-theme-3`.
+- Live Server fix was hardened with an inline local-dev cleanup script in `index.html`, a local-only visible `LIVE TEST 001` marker, and removal of stale generated `.netlify/deploy-850c4ea` files that referenced `20260424-dark-theme-3`.
 - Asset versions were bumped for the Live Server marker fix: `styles.css?v=20260426-live-server-1`, `app.js?v=20260426-live-server-1`, `APP_VERSION = 2026-04-26-live-server-1`, `CACHE_NAME = urge-lab-complete-v13-live-server`.
 - Dashboard KPI cards were redesigned into a compact micro-dashboard: smaller cards, tighter grid, reduced typography scale, denser mobile layout, and dark-mode-safe compact metric styling. No KPI IDs or values were removed.
 - Asset versions were bumped for the micro KPI update: `styles.css?v=20260426-micro-kpi-1`, `app.js?v=20260426-micro-kpi-1`, `APP_VERSION = 2026-04-26-micro-kpi-1`, `CACHE_NAME = urge-lab-complete-v14-micro-kpi`.
@@ -297,7 +297,7 @@ Service worker/cache/version update:
 - `service-worker.js` uses `CACHE_NAME`; bump it whenever cached assets change.
 - `index.html` and `service-worker.js` receive no-cache headers in `netlify.toml`.
 - Local development on `localhost`, `127.0.0.1`, `0.0.0.0`, or `file://` does not register the production service worker. If one is already controlling the page, `disableLocalServiceWorker()` unregisters it, deletes only `urge-lab*` caches, and reloads once.
-- `index.html` also runs an inline local-dev cleanup before loading `app.js`, so Live Server can clear old app service workers even before the main app bundle runs. On local dev only, it shows `DEV VERSION TEST 001`.
+- `index.html` also runs an inline local-dev cleanup before loading `app.js`, so Live Server can clear old app service workers even before the main app bundle runs. On local dev only, it shows `LIVE TEST 001`.
 
 Account logic:
 - Login/signup UI is handled by the Netlify Identity widget script.

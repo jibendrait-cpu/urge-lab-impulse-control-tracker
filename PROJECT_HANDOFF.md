@@ -214,7 +214,7 @@ Print/PDF/report:
 
 `.vscode/settings.json`
 - Purpose: VS Code Live Server local-preview guardrails.
-- Important settings: root is `/`; ignores `.netlify/`, `node_modules/`, `.git/`, and duplicate ignored `urge tracker pwa/`.
+- Important settings: host `127.0.0.1`, port `5500`, root `/`, full reload enabled, short reload wait, and ignores `.netlify/`, `node_modules/`, `.git/`, and duplicate ignored `urge tracker pwa/`.
 
 `manifest.json`
 - Purpose: PWA install metadata.
@@ -298,6 +298,7 @@ Service worker/cache/version update:
 - `index.html` and `service-worker.js` receive no-cache headers in `netlify.toml`.
 - Local development on `localhost`, `127.0.0.1`, `0.0.0.0`, or `file://` does not register the production service worker. If one is already controlling the page, `disableLocalServiceWorker()` unregisters it, deletes only `urge-lab*` caches, and reloads once.
 - `index.html` also runs an inline local-dev cleanup before loading `app.js`, so Live Server can clear old app service workers even before the main app bundle runs. On local dev only, it shows `LIVE TEST 001`.
+- The ignored duplicate local app folder `urge tracker pwa/` was removed after verification so there is only one local app entry file to open.
 
 Account logic:
 - Login/signup UI is handled by the Netlify Identity widget script.

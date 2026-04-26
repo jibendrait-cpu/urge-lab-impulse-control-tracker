@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#12213b">
   <meta name="description" content="Impulse-control tracker for urges, resistance, triggers, replacement actions, focus windows, and recovery.">
+  <meta http-equiv="Cache-Control" content="no-store">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Urge Lab">
@@ -12,11 +13,26 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260426-dev-cache-1">
+  <link rel="stylesheet" href="styles.css?v=20260426-live-server-1">
   <title>Urge Lab - Impulse Control Tracker</title>
+  <script>
+    (() => {
+      const isLocalDev = location.protocol === "file:" || ["localhost", "127.0.0.1", "0.0.0.0"].includes(location.hostname);
+      if (!isLocalDev) return;
+      document.documentElement.dataset.localDev = "true";
+      if (!("serviceWorker" in navigator)) return;
+      navigator.serviceWorker.getRegistrations?.().then(registrations => {
+        registrations.forEach(registration => registration.unregister());
+      });
+      if ("caches" in window) {
+        caches.keys().then(keys => keys.filter(key => key.startsWith("urge-lab")).forEach(key => caches.delete(key)));
+      }
+    })();
+  </script>
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="devVersionMarker" class="dev-version-marker" role="status">DEV VERSION TEST 001</div>
 
   <div class="app-shell">
     <header class="hero">
@@ -535,6 +551,6 @@
   </div>
 
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <script src="app.js?v=20260426-dev-cache-1"></script>
+  <script src="app.js?v=20260426-live-server-1"></script>
 </body>
 </html>

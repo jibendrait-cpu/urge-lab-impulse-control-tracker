@@ -1,9 +1,9 @@
-const CACHE_NAME = "urge-lab-complete-v12-dev-cache";
+const CACHE_NAME = "urge-lab-complete-v13-live-server";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=20260426-dev-cache-1",
-  "./app.js?v=20260426-dev-cache-1",
+  "./styles.css?v=20260426-live-server-1",
+  "./app.js?v=20260426-live-server-1",
   "./manifest.json",
   "./icons/icon.svg",
   "./icons/icon-192.png",

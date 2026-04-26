@@ -35,6 +35,8 @@ Recently fixed:
 - Asset versions were bumped again: `styles.css?v=20260424-account-sync-1`, `app.js?v=20260424-account-sync-1`, `APP_VERSION = 2026-04-24-account-sync-1`, `CACHE_NAME = urge-lab-complete-v8-account-sync`.
 - Log tab was redesigned for low-cognitive-load urge logging. It now uses large `Urge`, `Win`, and `Slip` actions, quick picks, visual urge-family cards, contextual sub-options, simple intensity/duration chips, optional details, and pin/unpin support.
 - Asset versions were bumped for the quick urge picker: `styles.css?v=20260426-quick-urge-1`, `app.js?v=20260426-quick-urge-1`, `APP_VERSION = 2026-04-26-quick-urge-1`, `CACHE_NAME = urge-lab-complete-v9-quick-urge`.
+- Daily Check-In reason choices were collapsed into a compact selector. Tapping the selected value opens a scrollable/searchable modal with reasons and an Other/custom input.
+- Asset versions were bumped for the pledge picker: `styles.css?v=20260426-pledge-picker-1`, `app.js?v=20260426-pledge-picker-1`, `APP_VERSION = 2026-04-26-pledge-picker-1`, `CACHE_NAME = urge-lab-complete-v10-pledge-picker`.
 - Production verification after deploy: `https://dreamy-concha-1b8a32.netlify.app/index.html` returned `app.js?v=20260426-quick-urge-1` and contained `quick-action-grid`.
 - Latest manual production deploy unique URL: `https://69edd2f5933e0d5c21b64ab3--dreamy-concha-1b8a32.netlify.app`.
 - Old duplicate local app folder `urge tracker pwa` was synced with the current root app files, but that folder is ignored by Git.
@@ -72,11 +74,11 @@ Screens/pages:
 - Focus: protected focus window, friction mode shortcuts, risk reminders.
 - Reflect: end-of-day reflection form and recent reflection list.
 - Settings: account and sync, appearance/theme, category usual lost time, if-then rescue plans, quick-select lists, data backup.
-- Modals: end battle/debrief modal and friction mode pause modal.
+- Modals: end battle/debrief modal, friction mode pause modal, and Daily Check-In reason picker modal.
 
 Buttons and actions:
 - Header: `Account`, `Install app`.
-- Hero/Dashboard: `Impulse Started`, rescue action buttons `Breathe 4-6`, `Drink water`, `Walk`, `Change room`, `Won`, `Defeated`, `Cancel mistaken start`, reason chips, `Save reason`.
+- Hero/Dashboard: `Impulse Started`, rescue action buttons `Breathe 4-6`, `Drink water`, `Walk`, `Change room`, `Won`, `Defeated`, `Cancel mistaken start`, compact reason selector, `Close`, reason option buttons, `Save reason`.
 - Tabs: `Dashboard`, `Log`, `History`, `Analytics`, `Focus`, `Reflect`, `Settings`.
 - Log: `Urge`, `Win`, `Slip`, quick-pick pills, urge-family cards, sub-option chips, `Pin`/`Unpin`, intensity chips, duration chips, `Add details`, `Start urge timer`, `Save win`, `Save slip`.
 - History: `Clear all`, per-session `Delete`.
@@ -88,7 +90,7 @@ Buttons and actions:
 - Friction modal: `Cancel`, `Continue to site`.
 
 Forms, inputs, dropdowns:
-- Daily check-in: `customPledge`.
+- Daily check-in: compact selector button `openPledgePicker`, search input `pledgeSearch`, scrollable option list `pledgeOptions`, custom input `customPledge`.
 - Quick logger: hidden compatibility fields `preCategory`, `preCustomCategory`, `manualOutcome`, `manualCategory`, `manualDuration`; visual controls `quickAction`, `quickPickChips`, `urgeGroupGrid`, `subOptionChips`, `intensityChips`, `durationChips`.
 - Optional quick-log details: `manualPlace`, `manualEmotion`, `manualSource`, `manualReplacement`, `manualNotes`.
 - History filters: `filterCategory`, `filterOutcome`, `filterFrom`, `filterTo`.
@@ -159,13 +161,13 @@ Print/PDF/report:
 - Purpose: Static app shell, metadata, PWA links, all screen markup, modals, datalists, script/style references.
 - Main sections: header hero, tabs, `dashboard`, `battle`, `history`, `analytics`, `focus`, `reflection`, `settings`, `endModal`, `frictionModal`.
 - Important IDs: all buttons/forms listed in section C.
-- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; Log tab replaced with quick urge picker; asset query strings updated to `quick-urge-1`.
+- Recent edits: account header button and Settings account/sync card added; Netlify Identity widget script loaded; Log tab replaced with quick urge picker; Daily Check-In reason picker modal added; asset query strings updated to `pledge-picker-1`.
 
 `styles.css`
 - Purpose: Responsive app styling, CSS variables, light/dark themes, cards, metrics, bars, modals, sticky/fixed mobile tabs.
 - Important variables: `--ink`, `--muted`, `--paper`, `--panel`, `--line`, `--navy`, `--blue`, `--teal`, `--green`, `--amber`, `--red`, `--shadow`, `--radius`.
 - Main layout classes: `.app-shell`, `.hero`, `.tabs`, `.view`, `.card`, `.battle-card`, `.metric-grid`, `.split`, `.grid-2`, `.grid-3`, `.grid-4`, `.modal`, `.sheet`.
-- Recent edits: added account button, account status pill, account facts styling, and quick-logger card/grid/chip styling.
+- Recent edits: added account button, account status pill, account facts styling, quick-logger card/grid/chip styling, and compact Daily Check-In picker styling.
 
 `app.js`
 - Purpose: Full client app logic, data model, calculations, rendering, event binding, backup/import/export, reminders, focus/friction, account login hooks, per-user local caches, and sync calls.
@@ -176,12 +178,12 @@ Print/PDF/report:
   - Navigation: `showView`.
   - Quick logger: `ensureQuickLogDefaults`, `renderQuickLog`, `selectQuickAction`, `selectQuickPick`, `selectUrgeGroup`, `selectUrgeSub`, `selectIntensity`, `selectDuration`, `togglePinnedUrge`, `selectedUrge`, `urgeFromLabel`, `quickPickItems`, `smartDefaultsFor`, `durationOptionByValue`.
   - Battles: `startBattle`, `tickBattle`, `endBattle`, `cancelBattle`, `saveEndedBattle`, `saveManual`, `deleteSession`, `clearAll`.
-  - Rendering: `render`, `renderAccountUi`, `renderDashboard`, `renderTodayPattern`, `renderHistory`, `renderAnalytics`, `renderCurrentDate`, `renderRangeSummary`, `renderTrend`, `renderCategoryAnalysis`, `renderReplacementEffectiveness`, `renderInsights`, `renderFocus`, `renderReflections`, `renderSettings`, `renderPledge`, `renderSessionList`, `renderBars`, `renderChips`.
+  - Rendering: `render`, `renderAccountUi`, `renderDashboard`, `renderTodayPattern`, `renderHistory`, `renderAnalytics`, `renderCurrentDate`, `renderRangeSummary`, `renderTrend`, `renderCategoryAnalysis`, `renderReplacementEffectiveness`, `renderInsights`, `renderFocus`, `renderReflections`, `renderSettings`, `renderPledge`, `renderPledgeOptions`, `renderSessionList`, `renderBars`, `renderChips`.
   - Sync: `scheduleRemoteSync`, `syncAccountState`, `fetchAccountState`, `pushAccountState`, `currentJwt`, `isNewer`.
   - Focus/friction/reminders: `startFocus`, `tickFocus`, `closeFocus`, `addSite`, `openFriction`, `cancelFriction`, `continueFriction`, `enableNotifications`, `addReminder`, `deleteReminderById`, `scheduleReminders`, `fireReminder`, `nextReminderDelay`.
-  - Settings: `syncSettingsUi`, `applyTheme`, `syncDynamicOptions`, `savePledge`, `saveCustomPledge`, `todaysPledge`, `saveCategoryEdit`, `addCategory`, `addPlan`, `deletePlanByIndex`, `saveLists`, `saveTheme`.
+  - Settings: `syncSettingsUi`, `applyTheme`, `syncDynamicOptions`, `openPledgePicker`, `closePledgePicker`, `savePledge`, `saveCustomPledge`, `todaysPledge`, `saveCategoryEdit`, `addCategory`, `addPlan`, `deletePlanByIndex`, `saveLists`, `saveTheme`.
   - Calculations/helpers: `savedSeconds`, `todayScore`, `recoveryScore`, `currentNoDefeatStreak`, `bestNoDefeatStreak`, `groupSessions`, `trendRow`, `summaryTile`, `countBy`, `hourCounts`, `bestReplacement`, `topEntry`, `parseList`, `nonNegative`, `sum`, `average`, `pct`, date/BS helpers, `normalizeUrl`, `download`, `sessionsToCsv`, `importJson`, `toast`.
-- Recent edits: account sync logic added; quick urge picker added; `APP_VERSION` bumped to `2026-04-26-quick-urge-1`; service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
+- Recent edits: account sync logic added; quick urge picker added; Daily Check-In pledge picker added; `APP_VERSION` bumped to `2026-04-26-pledge-picker-1`; service worker registration still uses versioned URL and `{ updateViaCache: "none" }`.
 
 `netlify/functions/account-state.js`
 - Purpose: Authenticated Netlify Function for reading/writing a signed-in user's app state.
@@ -198,9 +200,9 @@ Print/PDF/report:
 
 `service-worker.js`
 - Purpose: Offline cache and update behavior.
-- Important constants: `CACHE_NAME = "urge-lab-complete-v9-quick-urge"`, `ASSETS`.
+- Important constants: `CACHE_NAME = "urge-lab-complete-v10-pledge-picker"`, `ASSETS`.
 - Main handlers: `message`, `install`, `activate`, `fetch`.
-- Recent edits: cache version bumped to v9 and asset query strings updated to `quick-urge-1`.
+- Recent edits: cache version bumped to v10 and asset query strings updated to `pledge-picker-1`.
 
 `manifest.json`
 - Purpose: PWA install metadata.

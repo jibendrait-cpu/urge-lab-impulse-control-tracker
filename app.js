@@ -1,7 +1,7 @@
 const STORE_KEY = "urge-lab-complete-v1";
 const ACCOUNT_STORE_PREFIX = `${STORE_KEY}:account:`;
 const SYNC_ENDPOINT = "/.netlify/functions/account-state";
-const APP_VERSION = "2026-04-26-quick-urge-1";
+const APP_VERSION = "2026-04-26-pledge-picker-1";
 
 const defaults = {
   categories: [
@@ -266,6 +266,9 @@ function bindEvents() {
   $("saveMinimal").addEventListener("click", () => saveEndedBattle(true));
   $("manualForm").addEventListener("submit", saveManual);
   $("savePledge").addEventListener("click", saveCustomPledge);
+  $("openPledgePicker").addEventListener("click", openPledgePicker);
+  $("closePledgePicker").addEventListener("click", closePledgePicker);
+  $("pledgeSearch").addEventListener("input", renderPledgeOptions);
   $("clearAll").addEventListener("click", clearAll);
   ["filterCategory", "filterOutcome", "filterFrom", "filterTo"].forEach(id => $(id).addEventListener("input", renderHistory));
   $$(".range-btn").forEach(btn => btn.addEventListener("click", () => {
@@ -1217,14 +1220,50 @@ function syncDynamicOptions() {
 }
 
 function renderPledge() {
-  $("reasonChips").innerHTML = state.settings.reasons.map(reason => `<button class="pill" data-reason="${esc(reason)}">${esc(reason)}</button>`).join("");
   const pledge = todaysPledge();
   $("pledgeDisplay").textContent = pledge;
+  renderPledgeOptions();
+}
+
+function renderPledgeOptions() {
+  if (!$("pledgeOptions")) return;
+  const current = todaysPledge();
+  const query = $("pledgeSearch")?.value?.trim().toLowerCase() || "";
+  const recent = Object.values(state.pledges || {})
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .map(item => item.text)
+    .filter(Boolean);
+  const reasons = [...new Set([current, ...recent.slice(0, 3), ...state.settings.reasons])]
+    .filter(Boolean)
+    .filter(reason => reason.toLowerCase().includes(query))
+    .sort((a, b) => {
+      if (a === current) return -1;
+      if (b === current) return 1;
+      return a.localeCompare(b);
+    });
+  $("pledgeOptions").innerHTML = reasons.length ? reasons.map(reason => `
+    <button type="button" class="picker-option ${reason === current ? "active" : ""}" data-reason="${esc(reason)}">
+      <span>${esc(reason)}</span>
+      ${reason === current ? "<strong>Selected</strong>" : ""}
+    </button>
+  `).join("") : `<div class="empty">No match. Use Other below.</div>`;
+}
+
+function openPledgePicker() {
+  $("pledgeSearch").value = "";
+  renderPledgeOptions();
+  $("pledgeModal").classList.add("active");
+  $("pledgeSearch").focus();
+}
+
+function closePledgePicker() {
+  $("pledgeModal").classList.remove("active");
 }
 
 function savePledge(reason) {
   state.pledges[dateKey(new Date())] = { text: reason, createdAt: nowISO() };
   $("customPledge").value = "";
+  closePledgePicker();
   saveState();
 }
 

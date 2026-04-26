@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css?v=20260426-quick-urge-1">
+  <link rel="stylesheet" href="styles.css?v=20260426-pledge-picker-1">
   <title>Urge Lab - Impulse Control Tracker</title>
 </head>
 <body>
@@ -85,16 +85,17 @@
         </section>
 
         <section class="pledge-card card">
-          <div>
-            <p class="eyebrow">Daily check-in</p>
-            <h2>Why do I want control today?</h2>
-            <p id="pledgeDisplay" class="subtle">Pick or write a reason. It will show during battles and focus windows.</p>
+          <div class="compact-field-head">
+            <div>
+              <p class="eyebrow">Daily check-in</p>
+              <h2>Why do I want control today?</h2>
+            </div>
+            <button id="openPledgePicker" class="compact-select" type="button" aria-haspopup="dialog">
+              <span id="pledgeDisplay">Choose a reason</span>
+              <strong>Change</strong>
+            </button>
           </div>
-          <div class="toolbar" id="reasonChips"></div>
-          <div class="inline-form">
-            <input id="customPledge" placeholder="Write today's reason">
-            <button id="savePledge" class="solid-btn">Save reason</button>
-          </div>
+          <p class="subtle">It will show during battles and focus windows.</p>
         </section>
 
         <section class="metric-grid">
@@ -511,7 +512,29 @@
     </div>
   </div>
 
+  <div id="pledgeModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="pledgePickerTitle">
+    <div class="sheet compact-sheet">
+      <div class="sheet-head">
+        <div>
+          <p class="eyebrow">Daily check-in</p>
+          <h2 id="pledgePickerTitle">Choose reason</h2>
+        </div>
+        <button id="closePledgePicker" class="soft-btn" type="button">Close</button>
+      </div>
+      <label class="field">Search
+        <input id="pledgeSearch" placeholder="Find a reason">
+      </label>
+      <div id="pledgeOptions" class="picker-list"></div>
+      <div class="custom-picker">
+        <label class="field">Other
+          <input id="customPledge" placeholder="Write today's reason">
+        </label>
+        <button id="savePledge" class="solid-btn" type="button">Save reason</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  <script src="app.js?v=20260426-quick-urge-1"></script>
+  <script src="app.js?v=20260426-pledge-picker-1"></script>
 </body>
 </html>
